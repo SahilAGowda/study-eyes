@@ -607,6 +607,30 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ---
 
+## 👥 Team
+
 **Built with ❤️ by the Study Eyes Team**
 
+### Team Contributions
+
+- **Sahil** - Backend Development & System Configuration
+  - Flask backend architecture and API development
+  - WebSocket real-time communication setup
+  - Database design and migrations
+  - DevOps, deployment configuration, and system integration
+  - AI/ML model integration and computer vision pipeline
+
+- **Varshini** - Frontend Development
+  - React application architecture and UI/UX design
+  - Component development and state management
+  - Real-time data visualization and dashboard
+  - User interface design and user experience optimization
+
+- **Vikas** - Research & Analysis
+  - Computer vision research and algorithm analysis
+  - AI/ML model research and evaluation
+  - Performance optimization and testing strategies
+  - Documentation and technical analysis
+
+### Contact
 For more information, visit our [website](https://study-eyes.com) or contact us at [contact@study-eyes.com](mailto:contact@study-eyes.com).
