@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Container,
   Paper,
@@ -11,15 +11,26 @@ import {
   Link
 } from '@mui/material'
 import apiService from '../services/apiService'
+import { useAuth } from '../contexts/AuthContext'
 
 const Login = () => {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { login, isAuthenticated } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = location.state?.from?.pathname || '/dashboard'
+      navigate(from, { replace: true })
+    }
+  }, [isAuthenticated, navigate, location])
 
   const handleChange = (e) => {
     setFormData({
@@ -34,10 +45,15 @@ const Login = () => {
     setError('')
 
     try {
-      const response = await apiService.login(formData.email, formData.password)
-      navigate('/')
-    } catch (err) {
-      setError(err.message || 'Login failed')
+      const { user, token } = await apiService.login(formData.email, formData.password)
+      // Update auth context with user data and token
+      login({ user, token })
+      // Navigate to the intended destination or dashboard
+      const from = location.state?.from?.pathname || '/dashboard'
+      navigate(from, { replace: true })
+    } catch (error) {
+      setError(error.message || 'Login failed')
+      console.error('Login error:', error)
     } finally {
       setLoading(false)
     }
@@ -50,13 +66,17 @@ const Login = () => {
     try {
       // Try to create a demo account and login
       await apiService.register('demo', 'demo@example.com', 'demo123')
-      await apiService.login('demo@example.com', 'demo123')
-      navigate('/')
-    } catch (err) {
+      const { user, token } = await apiService.login('demo@example.com', 'demo123')
+      login({ user, token })
+      const from = location.state?.from?.pathname || '/dashboard'
+      navigate(from, { replace: true })
+    } catch (e) {
       // If demo account already exists, just try to login
       try {
-        await apiService.login('demo@example.com', 'demo123')
-        navigate('/')
+        const { user, token } = await apiService.login('demo@example.com', 'demo123')
+        login({ user, token })
+        const from = location.state?.from?.pathname || '/dashboard'
+        navigate(from, { replace: true })
       } catch (loginErr) {
         setError('Demo login failed. Please create an account.')
       }
@@ -77,18 +97,18 @@ const Login = () => {
         }}
       >
         <Paper 
-          elevation={6} 
+          elevation={0} 
           sx={{ 
             p: 6, 
             width: '100%',
             maxWidth: '480px',
-            backgroundColor: 'rgba(30, 30, 30, 0.95)',
+            background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(156, 39, 176, 0.1))',
             backdropFilter: 'blur(20px)',
             borderRadius: '24px',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
             position: 'relative',
             overflow: 'hidden',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)',
             '&::before': {
               content: '""',
               position: 'absolute',
@@ -96,8 +116,8 @@ const Login = () => {
               left: 0,
               right: 0,
               height: '4px',
-              background: 'linear-gradient(90deg, #4caf50, #2196f3, #9c27b0)',
-              animation: 'gradient-shift 3s ease-in-out infinite',
+              background: 'linear-gradient(90deg, #2196f3, #21cbf3, #9c27b0)',
+              boxShadow: '0 0 15px rgba(33, 150, 243, 0.3)',
             },
           }}
         >
@@ -183,6 +203,10 @@ const Login = () => {
                   borderRadius: '16px',
                   backgroundColor: 'rgba(255, 255, 255, 0.05)',
                   transition: 'all 0.3s ease',
+                  color: 'white',
+                  '& input': {
+                    color: 'white',
+                  },
                   '&:hover': {
                     backgroundColor: 'rgba(255, 255, 255, 0.08)',
                     '& .MuiOutlinedInput-notchedOutline': {
@@ -199,6 +223,7 @@ const Login = () => {
                   },
                 },
                 '& .MuiInputLabel-root': {
+                  color: 'rgba(255, 255, 255, 0.7)',
                   fontWeight: 500,
                   '&.Mui-focused': {
                     color: '#4caf50',
@@ -223,6 +248,10 @@ const Login = () => {
                   borderRadius: '16px',
                   backgroundColor: 'rgba(255, 255, 255, 0.05)',
                   transition: 'all 0.3s ease',
+                  color: 'white',
+                  '& input': {
+                    color: 'white',
+                  },
                   '&:hover': {
                     backgroundColor: 'rgba(255, 255, 255, 0.08)',
                     '& .MuiOutlinedInput-notchedOutline': {
@@ -239,6 +268,7 @@ const Login = () => {
                   },
                 },
                 '& .MuiInputLabel-root': {
+                  color: 'rgba(255, 255, 255, 0.7)',
                   fontWeight: 500,
                   '&.Mui-focused': {
                     color: '#4caf50',
@@ -258,16 +288,16 @@ const Login = () => {
                 mb: 3,
                 py: 2,
                 borderRadius: '16px',
-                background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
+                background: 'linear-gradient(45deg, #2196f3, #21cbf3)',
                 fontSize: '1.1rem',
                 fontWeight: 600,
                 textTransform: 'none',
-                boxShadow: '0 6px 20px rgba(76, 175, 80, 0.3)',
+                boxShadow: '0 8px 25px rgba(33, 150, 243, 0.2)',
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #45a049, #5eb55e)',
+                  background: 'linear-gradient(45deg, #1976d2, #1cb5e0)',
                   transform: 'translateY(-2px)',
-                  boxShadow: '0 8px 25px rgba(76, 175, 80, 0.4)',
+                  boxShadow: '0 12px 35px rgba(33, 150, 243, 0.3)',
                 },
                 '&:disabled': {
                   background: 'rgba(76, 175, 80, 0.3)',
