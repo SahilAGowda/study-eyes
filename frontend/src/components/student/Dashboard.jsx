@@ -1,49 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
-  Container,
   Grid,
   Typography,
   Button,
   Box,
-  LinearProgress,
   Paper,
-  Alert,
-  Chip,
   Card,
   CardContent,
-  Avatar,
-  Divider,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton
-} from '@mui/material';
+  LinearProgress,
+  Chip,
+  Fade,
+  Grow,
+  Drawer,
+  Fab,
+  Badge
+} from '@mui/material'
 import {
   PlayArrow as PlayIcon,
-  Timer as TimerIcon,
-  TrendingUp as TrendingIcon,
-  Warning as WarningIcon,
-  EmojiEvents as TrophyIcon,
+  TrendingUp as TrendingUpIcon,
   LocalFireDepartment as FireIcon,
-  CalendarToday as CalendarIcon,
+  EmojiEvents as TrophyIcon,
+  Visibility as EyeIcon,
+  Timer as TimerIcon,
+  Assessment as ChartIcon,
+  ArrowForward as ArrowIcon,
+  Psychology as BrainIcon,
+  Speed as SpeedIcon,
   CheckCircle as CheckIcon,
-  Assessment as AssessmentIcon,
-  Psychology as FocusIcon,
-  RemoveRedEye as EyeTrackingIcon,
-  PersonOutline as PersonIcon,
-  MoreVert as MoreIcon,
-  TrendingDown as TrendingDownIcon
-} from '@mui/icons-material';
-import apiService from '../../services/apiService';
+  AutoAwesome as SparkleIcon,
+  Chat as ChatIcon
+} from '@mui/icons-material'
+import { useAuth } from '../../contexts/AuthContext'
+import apiService from '../../services/apiService'
+import ChatBot from '../common/ChatBot'
 
 const Dashboard = ({ isStudying, setIsStudying }) => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [error] = useState(null);
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const [loading, setLoading] = useState(true)
+  const [chatOpen, setChatOpen] = useState(false)
 
   useEffect(() => {
     if (!apiService.isAuthenticated()) {
@@ -59,202 +55,192 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
         await apiService.startSession()
       }
       setIsStudying(true)
-      navigate('/study-fullscreen')
+      navigate('/student/study')
     } catch (err) {
       console.error('Error starting session:', err)
       setIsStudying(true)
-      navigate('/study-fullscreen')
+      navigate('/student/study')
     }
   }
 
-  // Mock student data for teacher view
-  const recentStudentActivity = [
-    { id: 1, name: 'Alice Johnson', session: '2h 15m', focus: 92, attention: 88, status: 'excellent' },
-    { id: 2, name: 'Bob Smith', session: '1h 45m', focus: 78, attention: 75, status: 'good' },
-    { id: 3, name: 'Charlie Brown', session: '3h 0m', focus: 85, attention: 82, status: 'good' },
-    { id: 4, name: 'Diana Prince', session: '1h 30m', focus: 65, attention: 70, status: 'needs-attention' },
-    { id: 5, name: 'Ethan Hunt', session: '2h 40m', focus: 90, attention: 89, status: 'excellent' },
-  ]
-
-  const todayStats = [
+  // Student stats
+  const stats = [
     {
-      title: 'Active Students',
-      value: '24',
-      subtitle: 'Currently studying',
-      icon: <PersonIcon />,
-      color: '#6366f1',
-      bgGradient: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-      change: '+12%',
+      title: 'Study Time',
+      value: '12.5h',
+      subtitle: 'This week',
+      icon: <TimerIcon />,
+      color: '#2196f3',
+      gradient: 'linear-gradient(135deg, #2196f3 0%, #1976d2 100%)',
+      change: '+2.5h',
       trend: 'up'
     },
     {
-      title: 'Avg. Focus Score',
-      value: '84%',
-      subtitle: 'Class average',
-      icon: <FocusIcon />,
-      color: '#10b981',
-      bgGradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      title: 'Focus Score',
+      value: '87%',
+      subtitle: 'Average',
+      icon: <BrainIcon />,
+      color: '#4caf50',
+      gradient: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)',
       change: '+5%',
       trend: 'up'
     },
     {
-      title: 'Total Study Time',
-      value: '48h',
-      subtitle: 'Today\'s total',
-      icon: <TimerIcon />,
-      color: '#f59e0b',
-      bgGradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-      change: '+18%',
+      title: 'Streak',
+      value: '7',
+      subtitle: 'Days',
+      icon: <FireIcon />,
+      color: '#ff9800',
+      gradient: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+      change: '+1',
       trend: 'up'
     },
     {
-      title: 'Attention Alerts',
-      value: '3',
-      subtitle: 'Requires attention',
-      icon: <WarningIcon />,
-      color: '#ef4444',
-      bgGradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-      change: '-2',
-      trend: 'down'
+      title: 'Achievements',
+      value: '24',
+      subtitle: 'Earned',
+      icon: <TrophyIcon />,
+      color: '#9c27b0',
+      gradient: 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)',
+      change: '+3',
+      trend: 'up'
     }
   ]
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'excellent': return '#10b981'
-      case 'good': return '#3b82f6'
-      case 'needs-attention': return '#ef4444'
-      default: return '#6b7280'
-    }
-  }
+  const recentSessions = [
+    { date: 'Today', duration: '2h 15m', focus: 92, attention: 88 },
+    { date: 'Yesterday', duration: '1h 45m', focus: 85, attention: 82 },
+    { date: '2 days ago', duration: '3h 0m', focus: 78, attention: 75 }
+  ]
+
+  const goals = [
+    { title: 'Weekly Study Goal', current: 12.5, target: 20, unit: 'hours' },
+    { title: 'Focus Improvement', current: 87, target: 90, unit: '%' },
+    { title: 'Session Streak', current: 7, target: 14, unit: 'days' }
+  ]
 
   return (
     <Box sx={{ 
       minHeight: '100vh',
-      bgcolor: '#0f172a',
-      backgroundImage: 'radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%)',
-      display: 'flex',
-      flexDirection: 'column',
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%)',
+      p: 0,
+      pt: 0
     }}>
-      <Container 
-        maxWidth={false}
-        sx={{ 
-          py: 4, 
-          px: { xs: 2, sm: 3, md: 4, lg: 6, xl: 8 },
-          width: '100%',
-          maxWidth: 'none !important',
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column'
-        }}
-      >
-        {error && (
-          <Alert 
-            severity="warning" 
-            sx={{ 
-              mb: 3,
-              borderRadius: 2,
-              bgcolor: 'rgba(245, 158, 11, 0.1)',
-              border: '1px solid rgba(245, 158, 11, 0.3)',
-              color: '#fbbf24',
-              '& .MuiAlert-icon': {
-                color: '#fbbf24'
-              }
-            }} 
-            icon={<WarningIcon />}
-          >
-            Unable to load dashboard data: {error}. Using offline mode.
-          </Alert>
-        )}
-
-        {/* Header Section */}
-        <Box sx={{ mb: 6 }}>
-          <Grid container spacing={3} alignItems="center" justifyContent="space-between">
-            <Grid item xs={12} md={8} lg={9}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                <Avatar sx={{ 
-                  width: 72, 
-                  height: 72, 
-                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                  fontSize: '2.25rem',
-                  boxShadow: '0 15px 35px rgba(99, 102, 241, 0.4)',
-                  border: '3px solid rgba(255, 255, 255, 0.1)',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'scale(1.05)',
-                    boxShadow: '0 20px 40px rgba(99, 102, 241, 0.6)',
-                  }
-                }}>
-                  👨‍🏫
-                </Avatar>
-                <Box>
+      {/* Enhanced Welcome Header */}
+      <Fade in timeout={800}>
+        <Box sx={{ 
+          mb: 4,
+          p: { xs: 3, md: 4 },
+          borderRadius: 0,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: 'none',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: '-50%',
+            right: '-10%',
+            width: '500px',
+            height: '500px',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)',
+            borderRadius: '50%',
+            animation: 'float 8s ease-in-out infinite'
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            bottom: '-40%',
+            left: '-8%',
+            width: '400px',
+            height: '400px',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)',
+            borderRadius: '50%',
+            animation: 'float 10s ease-in-out infinite reverse'
+          },
+          '@keyframes float': {
+            '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+            '50%': { transform: 'translate(30px, 30px) scale(1.1)' }
+          }
+        }}>
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 3 }}>
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                  <SparkleIcon sx={{ fontSize: 40, opacity: 0.9 }} />
                   <Typography variant="h3" sx={{ 
-                    fontWeight: 900,
-                    color: 'white',
-                    mb: 1,
-                    fontSize: { xs: '1.75rem', sm: '2rem', md: '2.25rem' },
-                    background: 'linear-gradient(135deg, white 0%, #a5b4fc 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    textShadow: '0 0 30px rgba(99, 102, 241, 0.5)',
+                    fontWeight: 800, 
+                    fontSize: { xs: '2rem', md: '2.5rem' },
+                    textShadow: '0 4px 12px rgba(0,0,0,0.1)'
                   }}>
-                    Teacher Dashboard
-                  </Typography>
-                  <Typography variant="h6" sx={{ 
-                    color: 'rgba(255,255,255,0.7)',
-                    fontWeight: 500,
-                    fontSize: { xs: '0.95rem', sm: '1rem' },
-                    lineHeight: 1.4,
-                  }}>
-                    Monitor student focus, attention, and study performance in real-time
+                    Welcome back, {user?.username || 'Student'}! 👋
                   </Typography>
                 </Box>
+                <Typography variant="h6" sx={{ 
+                  opacity: 0.95, 
+                  fontWeight: 400,
+                  letterSpacing: '0.5px',
+                  fontSize: { xs: '1rem', md: '1.25rem' }
+                }}>
+                  Ready to boost your focus and productivity today?
+                </Typography>
               </Box>
-            </Grid>
-            <Grid item xs={12} md={4} lg={3} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-              <Chip 
-                icon={<CalendarIcon sx={{ fontSize: 20 }} />}
-                label={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<PlayIcon sx={{ fontSize: 26 }} />}
+                onClick={handleStartStudying}
+                disabled={isStudying || loading}
                 sx={{
-                  bgcolor: 'rgba(99, 102, 241, 0.15)',
-                  color: '#a5b4fc',
-                  border: '2px solid rgba(99, 102, 241, 0.3)',
-                  fontWeight: 700,
-                  px: 3,
-                  py: 3,
-                  fontSize: '0.95rem',
-                  height: 'auto',
-                  borderRadius: 3,
-                  backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s ease',
+                  bgcolor: 'white',
+                  color: '#667eea',
+                  fontWeight: 800,
+                  px: 5,
+                  py: 2.5,
+                  borderRadius: '18px',
+                  textTransform: 'none',
+                  fontSize: '1.15rem',
+                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                  border: '3px solid rgba(255, 255, 255, 0.4)',
                   '&:hover': {
-                    bgcolor: 'rgba(99, 102, 241, 0.25)',
-                    border: '2px solid rgba(99, 102, 241, 0.5)',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 10px 25px rgba(99, 102, 241, 0.3)',
-                  }
+                    bgcolor: 'rgba(255, 255, 255, 0.98)',
+                    transform: 'translateY(-3px) scale(1.03)',
+                    boxShadow: '0 14px 35px rgba(0, 0, 0, 0.3)'
+                  },
+                  '&:active': {
+                    transform: 'translateY(-1px) scale(0.99)'
+                  },
+                  '&:disabled': {
+                    bgcolor: 'rgba(255, 255, 255, 0.5)',
+                    color: 'rgba(102, 126, 234, 0.5)'
+                  },
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
-              />
-            </Grid>
-          </Grid>
+              >
+                {loading ? 'Loading...' : isStudying ? 'Session Active' : 'Start Study Session'}
+              </Button>
+            </Box>
+          </Box>
         </Box>
+      </Fade>
 
-        {/* Stats Cards */}
-        <Grid container spacing={4} sx={{ mb: 6 }} justifyContent="center">
-          {todayStats.map((stat, index) => (
-            <Grid item xs={12} sm={6} md={6} lg={3} xl={3} key={index}>
-              <Card 
-                sx={{ 
-                  background: `linear-gradient(135deg, ${stat.color}15 0%, rgba(15, 23, 42, 0.9) 100%)`,
-                  backdropFilter: 'blur(25px)',
-                  border: `2px solid ${stat.color}25`,
-                  borderRadius: 4,
-                  overflow: 'hidden',
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                  height: '100%',
-                  minHeight: 200,
+      {/* Enhanced Stats Grid */}
+      <Box sx={{ px: { xs: 2, md: 4 }, mb: 5 }}>
+        <Grid container spacing={3} sx={{ maxWidth: '100%' }}>
+          {stats.map((stat, index) => (
+            <Grid item xs={12} sm={6} md={3} key={index}>
+            <Grow in timeout={600 + index * 100}>
+              <Card
+                sx={{
+                  background: '#FFFFFF',
+                  borderRadius: '16px',
+                  overflow: 'visible',
+                  transition: 'all 0.3s ease',
+                  border: '1px solid #E5E7EB',
                   position: 'relative',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                  cursor: 'pointer',
                   '&::before': {
                     content: '""',
                     position: 'absolute',
@@ -262,554 +248,340 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
                     left: 0,
                     right: 0,
                     height: '4px',
-                    background: stat.bgGradient,
-                    zIndex: 1,
+                    background: stat.gradient,
+                    borderRadius: '16px 16px 0 0'
                   },
                   '&:hover': {
-                    transform: 'translateY(-8px) scale(1.02)',
-                    boxShadow: `0 25px 50px ${stat.color}30, 0 0 0 1px ${stat.color}40`,
-                    border: `2px solid ${stat.color}50`,
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)',
+                    borderColor: '#D1D5DB',
                     '& .stat-icon': {
-                      transform: 'scale(1.1) rotate(5deg)',
-                    },
-                    '& .stat-value': {
-                      transform: 'scale(1.05)',
+                      transform: 'scale(1.05)'
                     }
-                  },
+                  }
                 }}
               >
-                <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <CardContent sx={{ p: 4 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
                     <Box
                       className="stat-icon"
                       sx={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: 3,
-                        background: stat.bgGradient,
+                        width: 56,
+                        height: 56,
+                        borderRadius: '16px',
+                        background: stat.gradient,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: `0 12px 30px ${stat.color}40`,
-                        transition: 'all 0.3s ease',
-                        position: 'relative',
-                        '&::after': {
-                          content: '""',
-                          position: 'absolute',
-                          inset: -2,
-                          borderRadius: 3,
-                          background: stat.bgGradient,
-                          opacity: 0.3,
-                          filter: 'blur(8px)',
-                          zIndex: -1,
-                        }
+                        boxShadow: `0 4px 12px ${stat.color}40`,
+                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                       }}
                     >
-                      {React.cloneElement(stat.icon, { 
-                        sx: { color: 'white', fontSize: 28 } 
-                      })}
+                      {React.cloneElement(stat.icon, { sx: { color: 'white', fontSize: 28 } })}
                     </Box>
-                    <Chip 
-                      icon={stat.trend === 'up' ? <TrendingIcon sx={{ fontSize: 16 }} /> : <TrendingDownIcon sx={{ fontSize: 16 }} />}
+                    <Chip
+                      icon={<TrendingUpIcon sx={{ fontSize: 14 }} />}
                       label={stat.change}
-                      size="medium"
+                      size="small"
                       sx={{
-                        height: 32,
-                        bgcolor: stat.trend === 'up' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                        color: stat.trend === 'up' ? '#10b981' : '#ef4444',
-                        border: `2px solid ${stat.trend === 'up' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                        fontWeight: 800,
-                        fontSize: '0.875rem',
-                        px: 2,
+                        height: 24,
+                        bgcolor: 'transparent',
+                        color: stat.color,
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                        border: 'none',
                         '& .MuiChip-icon': {
-                          fontSize: 18,
+                          color: stat.color
                         }
                       }}
                     />
                   </Box>
-                  
-                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <Typography variant="caption" sx={{ 
-                      color: 'rgba(255, 255, 255, 0.6)',
-                      fontWeight: 700,
-                      mb: 2,
-                      textTransform: 'uppercase',
-                      fontSize: '0.8rem',
-                      letterSpacing: 2,
-                      display: 'block'
-                    }}>
-                      {stat.title}
-                    </Typography>
-                    <Typography 
-                      className="stat-value"
-                      variant="h2" 
-                      sx={{ 
-                        fontWeight: 900,
-                        mb: 1,
-                        color: 'white',
-                        fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
-                        lineHeight: 1,
-                        transition: 'all 0.3s ease',
-                        textShadow: `0 0 20px ${stat.color}50`,
-                        background: `linear-gradient(135deg, white 0%, ${stat.color} 100%)`,
-                        backgroundClip: 'text',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                      }}
-                    >
-                      {stat.value}
-                    </Typography>
-                    <Typography variant="body2" sx={{ 
-                      color: 'rgba(255, 255, 255, 0.7)',
-                      fontWeight: 600,
-                      fontSize: '0.95rem'
-                    }}>
-                      {stat.subtitle}
-                    </Typography>
-                  </Box>
+                  <Typography variant="caption" sx={{ 
+                    color: '#6B7280', 
+                    fontWeight: 600, 
+                    textTransform: 'uppercase', 
+                    letterSpacing: 0.5, 
+                    display: 'block', 
+                    mb: 1.5,
+                    fontSize: '0.8rem'
+                  }}>
+                    {stat.title}
+                  </Typography>
+                  <Typography 
+                    className="stat-value"
+                    variant="h2" 
+                    sx={{ 
+                      fontWeight: 800, 
+                      mb: 1,
+                      color: stat.color,
+                      transition: 'all 0.4s ease',
+                      fontSize: '3rem',
+                      lineHeight: 1
+                    }}
+                  >
+                    {stat.value}
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: '#6B7280', fontWeight: 500, fontSize: '0.95rem' }}>
+                    {stat.subtitle}
+                  </Typography>
                 </CardContent>
               </Card>
-            </Grid>
-          ))}
+            </Grow>
+          </Grid>
+        ))}
         </Grid>
+      </Box>
 
-        {/* Main Content Grid */}
-        <Grid container spacing={3} justifyContent="center" sx={{ flex: 1 }}>
-          {/* Recent Student Activity */}
-          <Grid item xs={12} md={12} lg={8} xl={9}>
-            <Paper 
-              elevation={0} 
-              sx={{ 
-                p: 4,
-                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)',
-                backdropFilter: 'blur(25px)',
-                border: '2px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: 4,
-                height: '100%',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  border: '2px solid rgba(99, 102, 241, 0.2)',
-                  boxShadow: '0 20px 40px rgba(99, 102, 241, 0.1)',
-                }
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4, flexWrap: 'wrap', gap: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+      {/* Main Content Grid - Recent Sessions and Goals */}
+      <Box sx={{ px: { xs: 2, md: 4 } }}>
+        <Grid container spacing={4} sx={{ maxWidth: '100%' }}>
+        {/* Recent Sessions Column */}
+        <Grid item xs={12} md={6}>
+
+          {/* Enhanced Recent Sessions */}
+          <Fade in timeout={1200}>
+            <Paper sx={{ 
+              p: 4, 
+              borderRadius: '20px', 
+              background: '#FFFFFF',
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+            }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Box sx={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 3,
-                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    width: 48,
+                    height: 48,
+                    borderRadius: '14px',
+                    background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 12px 30px rgba(99, 102, 241, 0.4)',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'scale(1.05)',
-                      boxShadow: '0 15px 35px rgba(99, 102, 241, 0.6)',
-                    }
+                    justifyContent: 'center'
                   }}>
-                    <EyeTrackingIcon sx={{ color: 'white', fontSize: 24 }} />
+                    <TimerIcon sx={{ color: 'white', fontSize: 26 }} />
                   </Box>
-                  <Box>
-                    <Typography variant="h5" sx={{ 
-                      fontWeight: 800, 
-                      color: 'white', 
-                      fontSize: '1.5rem',
-                      mb: 0.5,
-                      background: 'linear-gradient(135deg, white 0%, #a5b4fc 100%)',
-                      backgroundClip: 'text',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                    }}>
-                      Student Activity Monitor
-                    </Typography>
-                    <Typography variant="body1" sx={{ 
-                      color: 'rgba(255,255,255,0.7)',
-                      fontWeight: 500,
-                      fontSize: '1rem'
-                    }}>
-                      Real-time focus and attention tracking
-                    </Typography>
-                  </Box>
+                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827', fontSize: '1.25rem' }}>
+                    Recent Sessions
+                  </Typography>
                 </Box>
-                <Button 
-                  variant="outlined" 
-                  size="medium"
-                  sx={{
-                    borderColor: 'rgba(99, 102, 241, 0.4)',
-                    color: '#a5b4fc',
-                    textTransform: 'none',
-                    fontWeight: 700,
-                    px: 3,
-                    py: 1.5,
-                    borderRadius: 2,
-                    fontSize: '0.95rem',
-                    backdropFilter: 'blur(10px)',
-                    transition: 'all 0.3s ease',
+                <Button
+                  endIcon={<ArrowIcon />}
+                  sx={{ 
+                    textTransform: 'none', 
+                    fontWeight: 600,
+                    color: '#8B5CF6',
+                    fontSize: '0.875rem',
                     '&:hover': {
-                      borderColor: '#6366f1',
-                      bgcolor: 'rgba(99, 102, 241, 0.15)',
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 8px 20px rgba(99, 102, 241, 0.3)',
+                      bgcolor: 'rgba(139, 92, 246, 0.08)'
                     }
                   }}
+                  onClick={() => navigate('/student/reports')}
                 >
                   View All
                 </Button>
               </Box>
-
-              <TableContainer sx={{ maxHeight: 500, overflow: 'auto' }}>
-                <Table stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600, fontSize: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', textTransform: 'uppercase', letterSpacing: 1, bgcolor: 'rgba(15, 23, 42, 0.95)', py: 2 }}>Student</TableCell>
-                      <TableCell sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600, fontSize: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', textTransform: 'uppercase', letterSpacing: 1, bgcolor: 'rgba(15, 23, 42, 0.95)', py: 2 }}>Session</TableCell>
-                      <TableCell sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600, fontSize: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', textTransform: 'uppercase', letterSpacing: 1, bgcolor: 'rgba(15, 23, 42, 0.95)', py: 2 }}>Focus Score</TableCell>
-                      <TableCell sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600, fontSize: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', textTransform: 'uppercase', letterSpacing: 1, bgcolor: 'rgba(15, 23, 42, 0.95)', py: 2 }}>Attention</TableCell>
-                      <TableCell sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600, fontSize: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', textTransform: 'uppercase', letterSpacing: 1, bgcolor: 'rgba(15, 23, 42, 0.95)', py: 2 }}>Status</TableCell>
-                      <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', bgcolor: 'rgba(15, 23, 42, 0.95)', py: 2 }}></TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {recentStudentActivity.map((student) => (
-                      <TableRow 
-                        key={student.id}
-                        sx={{
-                          '&:hover': {
-                            bgcolor: 'rgba(99, 102, 241, 0.05)',
-                          }
-                        }}
-                      >
-                        <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', py: 2 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Avatar sx={{ 
-                              width: 36, 
-                              height: 36,
-                              bgcolor: 'rgba(99, 102, 241, 0.2)',
-                              color: '#a5b4fc',
-                              fontWeight: 700,
-                              fontSize: '0.875rem'
-                            }}>
-                              {student.name.split(' ').map(n => n[0]).join('')}
-                            </Avatar>
-                            <Typography variant="body2" sx={{ color: 'white', fontWeight: 600 }}>
-                              {student.name}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ color: 'rgba(255,255,255,0.7)', borderBottom: '1px solid rgba(255,255,255,0.05)', py: 2 }}>
-                          {student.session}
-                        </TableCell>
-                        <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', py: 2 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Box sx={{ width: 80 }}>
-                              <LinearProgress 
-                                variant="determinate" 
-                                value={student.focus}
-                                sx={{
-                                  height: 6,
-                                  borderRadius: 1,
-                                  bgcolor: 'rgba(255,255,255,0.1)',
-                                  '& .MuiLinearProgress-bar': {
-                                    borderRadius: 1,
-                                    bgcolor: student.focus >= 80 ? '#10b981' : student.focus >= 60 ? '#f59e0b' : '#ef4444',
-                                  }
-                                }}
-                              />
-                            </Box>
-                            <Typography variant="body2" sx={{ color: 'white', fontWeight: 700, minWidth: 40 }}>
-                              {student.focus}%
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', py: 2 }}>
-                          <Typography variant="body2" sx={{ color: 'white', fontWeight: 600 }}>
-                            {student.attention}%
-                          </Typography>
-                        </TableCell>
-                        <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', py: 2 }}>
-                          <Chip 
-                            label={student.status.replace('-', ' ')}
-                            size="small"
-                            sx={{
-                              bgcolor: `${getStatusColor(student.status)}15`,
-                              color: getStatusColor(student.status),
-                              border: `1px solid ${getStatusColor(student.status)}30`,
-                              fontWeight: 700,
-                              fontSize: '0.7rem',
-                              textTransform: 'capitalize',
-                              height: 24
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', py: 2 }}>
-                          <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-                            <MoreIcon fontSize="small" />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
-          </Grid>
-
-          {/* Sidebar */}
-          <Grid item xs={12} md={12} lg={4} xl={3}>
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: 3,
-              height: 'fit-content',
-              position: 'sticky',
-              top: 20
-            }}>
-              {/* Class Performance */}
-              <Paper 
-                elevation={0} 
-                sx={{ 
-                  p: 4,
-                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.15) 100%)',
-                  backdropFilter: 'blur(25px)',
-                  border: '2px solid rgba(16, 185, 129, 0.3)',
-                  borderRadius: 4,
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    border: '2px solid rgba(16, 185, 129, 0.5)',
-                    boxShadow: '0 15px 30px rgba(16, 185, 129, 0.2)',
-                    transform: 'translateY(-2px)',
-                  }
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 4 }}>
-                  <Box sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 3,
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {recentSessions.map((session, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    p: 3,
+                    borderRadius: '16px',
+                    background: '#F9FAFB',
+                    border: '1px solid #E5E7EB',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 8px 20px rgba(16, 185, 129, 0.4)',
-                    transition: 'all 0.3s ease',
+                    gap: 3,
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer',
                     '&:hover': {
-                      transform: 'scale(1.05)',
-                      boxShadow: '0 12px 25px rgba(16, 185, 129, 0.6)',
+                      background: '#F3F4F6',
+                      borderColor: '#D1D5DB',
+                      transform: 'translateX(4px)'
                     }
-                  }}>
-                    <AssessmentIcon sx={{ color: 'white', fontSize: 22 }} />
-                  </Box>
-                  <Box>
-                    <Typography variant="h6" sx={{ 
-                      fontWeight: 800, 
-                      color: 'white', 
-                      fontSize: '1.25rem',
-                      mb: 0.5,
-                      background: 'linear-gradient(135deg, white 0%, #10b981 100%)',
-                      backgroundClip: 'text',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                    }}>
-                      Class Performance
-                    </Typography>
-                    <Typography variant="body2" sx={{ 
-                      color: 'rgba(255,255,255,0.7)',
-                      fontWeight: 500,
-                      fontSize: '0.9rem'
-                    }}>
-                      Weekly overview
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Box sx={{ mb: 2.5 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
-                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
-                      Avg. Study Time
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 700 }}>
-                      25h / 40h
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={62.5}
+                  }}
+                >
+                  <Box
                     sx={{
-                      height: 10,
-                      borderRadius: 2,
-                      bgcolor: 'rgba(16, 185, 129, 0.1)',
-                      '& .MuiLinearProgress-bar': {
-                        borderRadius: 2,
-                        background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)',
-                      }
-                    }}
-                  />
-                  <Typography variant="caption" sx={{ mt: 1, color: '#10b981', fontWeight: 600, display: 'block' }}>
-                    62.5% Complete • 3 days remaining
-                  </Typography>
-                </Box>
-
-                <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.1)' }} />
-
-                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-                  <Chip 
-                    icon={<CheckIcon sx={{ fontSize: 16 }} />}
-                    label="On Track" 
-                    size="small"
-                    sx={{
-                      bgcolor: 'rgba(16, 185, 129, 0.2)',
-                      color: '#10b981',
-                      fontWeight: 700,
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                    }}
-                  />
-                  <Chip 
-                    icon={<FireIcon sx={{ fontSize: 16 }} />}
-                    label="5 Day Streak" 
-                    size="small"
-                    sx={{
-                      bgcolor: 'rgba(245, 158, 11, 0.2)',
-                      color: '#fbbf24',
-                      fontWeight: 700,
-                      border: '1px solid rgba(245, 158, 11, 0.3)',
-                    }}
-                  />
-                </Box>
-              </Paper>
-
-              {/* Quick Actions */}
-              <Paper 
-                elevation={0} 
-                sx={{ 
-                  p: 3,
-                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                  borderRadius: 3,
-                }}
-              >
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'white', mb: 3, fontSize: '1rem' }}>
-                  Quick Actions
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Button
-                    variant="contained"
-                    startIcon={<PlayIcon />}
-                    onClick={handleStartStudying}
-                    disabled={isStudying || loading}
-                    fullWidth
-                    sx={{
-                      py: 1.5,
-                      borderRadius: 2,
-                      fontWeight: 700,
-                      textTransform: 'none',
-                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                      boxShadow: '0 8px 20px rgba(99, 102, 241, 0.3)',
-                      '&:hover': {
-                        background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                        boxShadow: '0 12px 25px rgba(99, 102, 241, 0.4)',
-                      },
-                      '&:disabled': {
-                        background: 'rgba(99, 102, 241, 0.3)',
-                      }
+                      width: 56,
+                      height: 56,
+                      borderRadius: '16px',
+                      background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
                     }}
                   >
-                    {loading ? 'Loading...' : isStudying ? 'Session Active' : 'Start Monitoring'}
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    startIcon={<AssessmentIcon />}
-                    fullWidth
-                    sx={{
-                      py: 1.5,
-                      borderRadius: 2,
-                      fontWeight: 700,
-                      textTransform: 'none',
-                      borderColor: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
-                      '&:hover': {
-                        borderColor: 'rgba(255, 255, 255, 0.2)',
-                        bgcolor: 'rgba(255, 255, 255, 0.05)',
-                      }
-                    }}
-                  >
-                    Generate Report
-                  </Button>
-                </Box>
-              </Paper>
-
-              {/* Top Performers */}
-              <Paper 
-                elevation={0} 
-                sx={{ 
-                  p: 3,
-                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(245, 158, 11, 0.2)',
-                  borderRadius: 3,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                  <TrophyIcon sx={{ color: '#fbbf24', fontSize: 24 }} />
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'white', fontSize: '1rem' }}>
-                    Top Performers
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {[
-                    { name: 'Alice Johnson', score: 92, rank: 1 },
-                    { name: 'Ethan Hunt', score: 90, rank: 2 },
-                    { name: 'Charlie Brown', score: 85, rank: 3 },
-                  ].map((student) => (
-                    <Box 
-                      key={student.rank}
-                      sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 2,
-                        p: 2,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(255, 255, 255, 0.03)',
-                        border: '1px solid rgba(255, 255, 255, 0.05)',
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          minWidth: 28,
-                          height: 28,
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          bgcolor: student.rank === 1 ? '#fbbf24' : student.rank === 2 ? '#94a3b8' : '#cd7f32',
-                          color: 'white',
-                          fontWeight: 800,
-                          fontSize: '0.875rem'
-                        }}
-                      >
-                        {student.rank}
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" sx={{ color: 'white', fontWeight: 600 }}>
-                          {student.name}
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" sx={{ color: '#fbbf24', fontWeight: 700 }}>
-                        {student.score}%
+                    <TimerIcon sx={{ color: 'white', fontSize: 28 }} />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, color: '#111827', fontSize: '1.05rem' }}>
+                      {session.date}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#6B7280', fontWeight: 500, fontSize: '0.9rem' }}>
+                      Duration: {session.duration}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="caption" sx={{ color: '#6B7280', fontWeight: 600, fontSize: '0.8rem', display: 'block', mb: 0.5 }}>
+                        Focus
+                      </Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 800, color: '#10B981', fontSize: '1.25rem', lineHeight: 1 }}>
+                        {session.focus}%
                       </Typography>
                     </Box>
-                  ))}
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="caption" sx={{ color: '#6B7280', fontWeight: 600, fontSize: '0.8rem', display: 'block', mb: 0.5 }}>
+                        Attention
+                      </Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 800, color: '#3B82F6', fontSize: '1.25rem', lineHeight: 1 }}>
+                        {session.attention}%
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Box>
-              </Paper>
+              ))}
             </Box>
-          </Grid>
+            </Paper>
+          </Fade>
         </Grid>
-      </Container>
-    </Box>
-  );
-} 
 
-export default Dashboard;
+        {/* Goals Column */}
+        <Grid item xs={12} md={6}>
+          {/* Enhanced Goals Progress */}
+          <Fade in timeout={1000}>
+            <Paper sx={{ 
+              p: 4, 
+              borderRadius: '20px', 
+              background: '#FFFFFF',
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+                <Box sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '14px',
+                  background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <TrophyIcon sx={{ color: 'white', fontSize: 26 }} />
+                </Box>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827', fontSize: '1.25rem' }}>
+                  Your Goals
+                </Typography>
+              </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {goals.map((goal, index) => {
+                const progress = (goal.current / goal.target) * 100
+                return (
+                  <Box 
+                    key={index}
+                    sx={{
+                      mb: 0
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827', fontSize: '1.05rem' }}>
+                        {goal.title}
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: '#6B7280', fontWeight: 600, fontSize: '0.95rem' }}>
+                        {goal.current}/{goal.target} {goal.unit}
+                      </Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={progress}
+                      sx={{
+                        height: 10,
+                        borderRadius: 10,
+                        bgcolor: '#E5E7EB',
+                        '& .MuiLinearProgress-bar': {
+                          borderRadius: 10,
+                          background: index === 0 ? 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)' : 
+                                     index === 1 ? 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)' :
+                                     'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)',
+                          transition: 'all 0.3s ease'
+                        }
+                      }}
+                    />
+                    <Typography variant="body2" sx={{ color: '#6B7280', fontWeight: 600, mt: 1.5, display: 'block', fontSize: '0.85rem' }}>
+                      {progress.toFixed(0)}% Complete
+                    </Typography>
+                  </Box>
+                )
+              })}
+            </Box>
+            </Paper>
+          </Fade>
+        </Grid>
+        </Grid>
+      </Box>
+
+      {/* Floating Chat Button */}
+      <Fade in timeout={1500}>
+        <Fab
+          color="primary"
+          aria-label="chat"
+          onClick={() => setChatOpen(true)}
+          sx={{
+            position: 'fixed',
+            bottom: 32,
+            right: 32,
+            width: 64,
+            height: 64,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
+              transform: 'scale(1.1)',
+              boxShadow: '0 12px 32px rgba(102, 126, 234, 0.5)'
+            },
+            transition: 'all 0.3s ease',
+            zIndex: 1000
+          }}
+        >
+          <Badge
+            badgeContent="AI"
+            color="success"
+            sx={{
+              '& .MuiBadge-badge': {
+                fontSize: '0.65rem',
+                fontWeight: 700,
+                height: 18,
+                minWidth: 18,
+                top: -4,
+                right: -4
+              }
+            }}
+          >
+            <ChatIcon sx={{ fontSize: 28 }} />
+          </Badge>
+        </Fab>
+      </Fade>
+
+      {/* Chat Drawer */}
+      <Drawer
+        anchor="right"
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: { xs: '100%', sm: 420 },
+            boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.15)'
+          }
+        }}
+      >
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <ChatBot onClose={() => setChatOpen(false)} />
+        </Box>
+      </Drawer>
+    </Box>
+  )
+}
+
+export default Dashboard
