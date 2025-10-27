@@ -26,8 +26,8 @@ import {
   VideocamOff as CameraOffIcon,
   Refresh as RefreshIcon
 } from '@mui/icons-material'
-import cameraService from '../services/cameraService'
-import { useWebSocket } from '../contexts/WebSocketContext'
+import cameraService from '../../services/cameraService'
+import { useWebSocket } from '../../contexts/WebSocketContext'
 
 const StudySession = ({ isStudying, setIsStudying, setStudyData }) => {
   const navigate = useNavigate()

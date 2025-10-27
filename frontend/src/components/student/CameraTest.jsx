@@ -16,7 +16,7 @@ import {
   VideocamOff as CameraOffIcon,
   Refresh as RefreshIcon 
 } from '@mui/icons-material';
-import cameraService from '../services/cameraService';
+import cameraService from '../../services/cameraService';
 
 const CameraTest = () => {
   const videoRef = useRef(null);

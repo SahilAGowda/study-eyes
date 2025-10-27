@@ -12,7 +12,7 @@ import {
   LinearProgress
 } from '@mui/material'
 import { Videocam, VideocamOff } from '@mui/icons-material'
-import cameraService from '../services/cameraService'
+import cameraService from '../../services/cameraService'
 
 function FocusTest() {
   const videoRef = useRef(null)

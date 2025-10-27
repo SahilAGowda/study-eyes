@@ -26,8 +26,8 @@ import {
   VideocamOff as CameraOffIcon,
   Refresh as RefreshIcon
 } from '@mui/icons-material'
-import cameraService from '../services/cameraService'
-import { useWebSocket } from '../contexts/WebSocketContext'
+import cameraService from '../../services/cameraService'
+import { useWebSocket } from '../../contexts/WebSocketContext'
 import CameraOverlay from './CameraOverlay.jsx'
 
 const StudySession = ({ isStudying, setIsStudying, setStudyData }) => {
@@ -218,8 +218,8 @@ const StudySession = ({ isStudying, setIsStudying, setStudyData }) => {
 
   if (!isStudying) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Paper elevation={3} sx={{ p: 4, textAlign: 'center', backgroundColor: '#1e1e1e' }}>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Paper elevation={3} sx={{ p: 4, textAlign: 'center', backgroundColor: '#ffffff' }}>
           <Typography variant="h5" gutterBottom>
             No Active Study Session
           </Typography>
@@ -238,7 +238,7 @@ const StudySession = ({ isStudying, setIsStudying, setStudyData }) => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Camera Error Display */}
       {cameraError && (
         <Alert 
@@ -502,7 +502,7 @@ const StudySession = ({ isStudying, setIsStudying, setStudyData }) => {
               height: '360px',
               borderRadius: '16px',
               transform: 'scaleX(-1)', // Mirror effect for natural selfie view
-              backgroundColor: '#1a1a1a',
+              backgroundColor: '#000000',
               display: 'block',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               objectFit: 'cover',

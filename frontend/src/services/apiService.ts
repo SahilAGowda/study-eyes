@@ -286,6 +286,230 @@ class ApiService {
     const response = await this.api.get('/health');
     return response.data;
   }
+
+  // ==================== STUDENT API METHODS ====================
+  
+  /**
+   * Get student engagement data
+   */
+  async getStudentEngagement(studentId?: number): Promise<any> {
+    const endpoint = studentId ? `/students/${studentId}/engagement` : '/students/engagement';
+    const response = await this.api.get(endpoint);
+    return response.data;
+  }
+
+  /**
+   * Get student quizzes
+   */
+  async getStudentQuizzes(studentId?: number): Promise<any> {
+    const endpoint = studentId ? `/students/${studentId}/quizzes` : '/students/quizzes';
+    const response = await this.api.get(endpoint);
+    return response.data;
+  }
+
+  /**
+   * Submit quiz answer
+   */
+  async submitQuizAnswer(quizId: number, answers: any): Promise<any> {
+    const response = await this.api.post(`/quizzes/${quizId}/submit`, { answers });
+    return response.data;
+  }
+
+  /**
+   * Get student reports
+   */
+  async getStudentReports(studentId?: number, params?: any): Promise<any> {
+    const endpoint = studentId ? `/students/${studentId}/reports` : '/students/reports';
+    const response = await this.api.get(endpoint, { params });
+    return response.data;
+  }
+
+  /**
+   * Get student notifications
+   */
+  async getStudentNotifications(): Promise<any> {
+    const response = await this.api.get('/students/notifications');
+    return response.data;
+  }
+
+  /**
+   * Mark notification as read
+   */
+  async markNotificationRead(notificationId: number): Promise<any> {
+    const response = await this.api.put(`/notifications/${notificationId}/read`);
+    return response.data;
+  }
+
+  // ==================== TEACHER API METHODS ====================
+
+  /**
+   * Get teacher's live class data
+   */
+  async getTeacherClassData(classId?: number): Promise<any> {
+    const endpoint = classId ? `/teachers/classes/${classId}` : '/teachers/classes';
+    const response = await this.api.get(endpoint);
+    return response.data;
+  }
+
+  /**
+   * Start a live class
+   */
+  async startLiveClass(classData: any): Promise<any> {
+    const response = await this.api.post('/teachers/classes/start', classData);
+    return response.data;
+  }
+
+  /**
+   * End a live class
+   */
+  async endLiveClass(classId: number): Promise<any> {
+    const response = await this.api.post(`/teachers/classes/${classId}/end`);
+    return response.data;
+  }
+
+  /**
+   * Get teacher's students overview
+   */
+  async getTeacherStudents(params?: any): Promise<any> {
+    const response = await this.api.get('/teachers/students', { params });
+    return response.data;
+  }
+
+  /**
+   * Get individual student data for teacher
+   */
+  async getStudentDataForTeacher(studentId: number): Promise<any> {
+    const response = await this.api.get(`/teachers/students/${studentId}`);
+    return response.data;
+  }
+
+  /**
+   * Get teacher analytics
+   */
+  async getTeacherAnalytics(params?: any): Promise<any> {
+    const response = await this.api.get('/teachers/analytics', { params });
+    return response.data;
+  }
+
+  /**
+   * Create quiz/exam
+   */
+  async createQuiz(quizData: any): Promise<any> {
+    const response = await this.api.post('/teachers/quizzes', quizData);
+    return response.data;
+  }
+
+  /**
+   * Get teacher's quizzes
+   */
+  async getTeacherQuizzes(params?: any): Promise<any> {
+    const response = await this.api.get('/teachers/quizzes', { params });
+    return response.data;
+  }
+
+  /**
+   * Get quiz results
+   */
+  async getQuizResults(quizId: number): Promise<any> {
+    const response = await this.api.get(`/teachers/quizzes/${quizId}/results`);
+    return response.data;
+  }
+
+  // ==================== MANAGEMENT/ADMIN API METHODS ====================
+
+  /**
+   * Get admin summary reports
+   */
+  async getAdminReports(params?: any): Promise<any> {
+    const response = await this.api.get('/management/reports', { params });
+    return response.data;
+  }
+
+  /**
+   * Get department performance data
+   */
+  async getDepartmentPerformance(departmentId?: number): Promise<any> {
+    const endpoint = departmentId 
+      ? `/management/departments/${departmentId}/performance` 
+      : '/management/departments/performance';
+    const response = await this.api.get(endpoint);
+    return response.data;
+  }
+
+  /**
+   * Get all students analytics for management
+   */
+  async getManagementStudentsAnalytics(params?: any): Promise<any> {
+    const response = await this.api.get('/management/students/analytics', { params });
+    return response.data;
+  }
+
+  /**
+   * Get all teachers overview for management
+   */
+  async getManagementTeachersOverview(params?: any): Promise<any> {
+    const response = await this.api.get('/management/teachers', { params });
+    return response.data;
+  }
+
+  /**
+   * Get system-wide statistics
+   */
+  async getSystemStatistics(): Promise<any> {
+    const response = await this.api.get('/management/statistics');
+    return response.data;
+  }
+
+  /**
+   * Update system settings
+   */
+  async updateSystemSettings(settings: any): Promise<any> {
+    const response = await this.api.put('/management/settings', settings);
+    return response.data;
+  }
+
+  /**
+   * Get system settings
+   */
+  async getSystemSettings(): Promise<any> {
+    const response = await this.api.get('/management/settings');
+    return response.data;
+  }
+
+  /**
+   * Get institutional dashboard data
+   */
+  async getInstitutionalDashboard(): Promise<any> {
+    const response = await this.api.get('/management/dashboard');
+    return response.data;
+  }
+
+  /**
+   * Export institutional data
+   */
+  async exportInstitutionalData(format: 'json' | 'csv' | 'pdf' = 'csv', params?: any): Promise<Blob> {
+    const response = await this.api.get('/management/export', {
+      params: { format, ...params },
+      responseType: 'blob',
+    });
+    return response.data;
+  }
+
+  /**
+   * Manage user roles (admin only)
+   */
+  async updateUserRole(userId: number, role: string): Promise<any> {
+    const response = await this.api.put(`/management/users/${userId}/role`, { role });
+    return response.data;
+  }
+
+  /**
+   * Get all users (admin only)
+   */
+  async getAllUsers(params?: any): Promise<any> {
+    const response = await this.api.get('/management/users', { params });
+    return response.data;
+  }
 }
 
 // Export singleton instance

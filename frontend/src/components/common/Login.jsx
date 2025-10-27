@@ -10,8 +10,8 @@ import {
   Alert,
   Link
 } from '@mui/material'
-import apiService from '../services/apiService'
-import { useAuth } from '../contexts/AuthContext'
+import apiService from '../../services/apiService'
+import { useAuth } from '../../contexts/AuthContext'
 
 const Login = () => {
   const navigate = useNavigate()
@@ -23,6 +23,9 @@ const Login = () => {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Get role from URL params
+  const role = new URLSearchParams(location.search).get('role') || 'student'
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -46,13 +49,18 @@ const Login = () => {
 
     try {
       const { user, token } = await apiService.login(formData.email, formData.password)
-      // Update auth context with user data and token
-      login({ user, token })
-      // Navigate to the intended destination or dashboard
-      const from = location.state?.from?.pathname || '/dashboard'
-      navigate(from, { replace: true })
+      
+      // Prepare user data with role
+      const userData = {
+        ...user,
+        token,
+        role: user.role || role || 'student' // Use backend role, fallback to URL param or default
+      }
+      
+      // Login will automatically redirect based on role
+      login(userData, location.state?.from?.pathname)
     } catch (error) {
-      setError(error.message || 'Login failed')
+      setError(error.message || 'Login failed. Please check your credentials.')
       console.error('Login error:', error)
     } finally {
       setLoading(false)
@@ -67,16 +75,26 @@ const Login = () => {
       // Try to create a demo account and login
       await apiService.register('demo', 'demo@example.com', 'demo123')
       const { user, token } = await apiService.login('demo@example.com', 'demo123')
-      login({ user, token })
-      const from = location.state?.from?.pathname || '/dashboard'
-      navigate(from, { replace: true })
+      
+      const userData = {
+        ...user,
+        token,
+        role: user.role || 'student'
+      }
+      
+      login(userData)
     } catch (e) {
       // If demo account already exists, just try to login
       try {
         const { user, token } = await apiService.login('demo@example.com', 'demo123')
-        login({ user, token })
-        const from = location.state?.from?.pathname || '/dashboard'
-        navigate(from, { replace: true })
+        
+        const userData = {
+          ...user,
+          token,
+          role: user.role || 'student'
+        }
+        
+        login(userData)
       } catch (loginErr) {
         setError('Demo login failed. Please create an account.')
       }
@@ -163,7 +181,7 @@ const Login = () => {
                 opacity: 0.8,
               }}
             >
-              Sign in to your account
+              Sign in as {role.charAt(0).toUpperCase() + role.slice(1)}
             </Typography>
           </Box>
           

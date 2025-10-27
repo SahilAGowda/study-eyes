@@ -2,20 +2,11 @@ import React, { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
-import Box from '@mui/material/Box'
-import Container from '@mui/material/Container'
 import { WebSocketProvider } from './contexts/WebSocketContext'
-import { AuthProvider } from './contexts/AuthContext'
-import PrivateRoute from './components/PrivateRoute'
-import Dashboard from './components/Dashboard'
-import StudySession from './components/StudySession'
-import Analytics from './components/Analytics'
-import Settings from './components/Settings'
-import Navbar from './components/Navbar'
-import CameraTest from './components/CameraTest'
-import FocusTest from './components/FocusTest'
-import Login from './components/Login'
-import Register from './components/Register'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import PrivateRoute from './components/common/PrivateRoute'
+import Layout from './components/common/Layout'
+import { publicRoutes, roleRoutes, getDefaultRoute, getMenuItems } from './routes'
 import './App.css'
 
 const theme = createTheme({
@@ -266,6 +257,13 @@ const theme = createTheme({
   },
 })
 
+// Component to handle role-based default redirect
+const RoleBasedRedirect = () => {
+  const { user } = useAuth()
+  const defaultRoute = getDefaultRoute(user?.role)
+  return <Navigate to={defaultRoute} replace />
+}
+
 function App() {
   const [isStudying, setIsStudying] = useState(false)
   const [studyData, setStudyData] = useState({
@@ -281,88 +279,74 @@ function App() {
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <WebSocketProvider>
-            <Box
-              sx={{
-                minHeight: '100vh',
-                width: '100%',
-                display: 'flex',
-                flexDirection: 'column'
-              }}
-            >
-              <Navbar />
-              <Container 
-                maxWidth={false}
-                sx={{
-                  flex: 1,
-                  py: 3,
-                  px: { xs: 2, sm: 3, md: 4 },
-                  width: '100%'
-                }}
+            <Routes>
+              {/* Public Routes */}
+              {publicRoutes.map(({ path, element: Element }) => (
+                <Route key={path} path={path} element={<Element />} />
+              ))}
+
+              {/* Student Portal with Layout */}
+              <Route
+                path="/student/*"
+                element={
+                  <PrivateRoute requiredRole="student">
+                    <Layout role="student" menuItems={getMenuItems('student')} />
+                  </PrivateRoute>
+                }
               >
-                <Routes>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
+                {roleRoutes.student.map(({ path, element: Element }) => (
                   <Route
-                    path="/"
+                    key={path}
+                    path={path}
                     element={
-                      <PrivateRoute>
-                        <Dashboard 
-                          studyData={studyData} 
-                          isStudying={isStudying}
-                          setIsStudying={setIsStudying}
-                        />
-                      </PrivateRoute>
+                      <Element 
+                        studyData={studyData}
+                        isStudying={isStudying}
+                        setIsStudying={setIsStudying}
+                        setStudyData={setStudyData}
+                      />
                     }
                   />
-                  <Route
-                    path="/study"
-                    element={
-                      <PrivateRoute>
-                        <StudySession 
-                          isStudying={isStudying}
-                          setIsStudying={setIsStudying}
-                          studyData={studyData}
-                          setStudyData={setStudyData}
-                        />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route
-                    path="/analytics"
-                    element={
-                      <PrivateRoute>
-                        <Analytics studyData={studyData} />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route
-                    path="/settings"
-                    element={
-                      <PrivateRoute>
-                        <Settings />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route
-                    path="/camera-test"
-                    element={
-                      <PrivateRoute>
-                        <CameraTest />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route
-                    path="/focus-test"
-                    element={
-                      <PrivateRoute>
-                        <FocusTest />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Container>
-            </Box>
+                ))}
+              </Route>
+
+              {/* Teacher Portal with Layout */}
+              <Route
+                path="/teacher/*"
+                element={
+                  <PrivateRoute requiredRole="teacher">
+                    <Layout role="teacher" menuItems={getMenuItems('teacher')} />
+                  </PrivateRoute>
+                }
+              >
+                {roleRoutes.teacher.map(({ path, element: Element }) => (
+                  <Route key={path} path={path} element={<Element />} />
+                ))}
+              </Route>
+
+              {/* Management Portal with Layout */}
+              <Route
+                path="/management/*"
+                element={
+                  <PrivateRoute requiredRole="management">
+                    <Layout role="management" menuItems={getMenuItems('management')} />
+                  </PrivateRoute>
+                }
+              >
+                {roleRoutes.management.map(({ path, element: Element }) => (
+                  <Route key={path} path={path} element={<Element />} />
+                ))}
+              </Route>
+
+              {/* Legacy routes redirect - for backward compatibility */}
+              <Route path="/dashboard" element={<Navigate to="/student/dashboard" replace />} />
+              <Route path="/study" element={<Navigate to="/student/study" replace />} />
+              <Route path="/analytics" element={<Navigate to="/student/analytics" replace />} />
+              <Route path="/settings" element={<Navigate to="/student/settings" replace />} />
+
+              {/* Default redirect based on role */}
+              <Route path="*" element={<RoleBasedRedirect />} />
+            </Routes>
           </WebSocketProvider>
         </ThemeProvider>
       </AuthProvider>
