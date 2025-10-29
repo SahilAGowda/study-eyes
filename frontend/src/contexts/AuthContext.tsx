@@ -60,6 +60,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * @param redirectTo - Optional custom redirect path
    */
   const login = (userData: User, redirectTo?: string) => {
+    console.log('AuthContext.login - userData received:', userData);
+    console.log('AuthContext.login - userData.role:', userData.role);
+    
     setIsAuthenticated(true);
     setUser(userData);
     
@@ -69,6 +72,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('role', userData.role);
+
+    console.log('AuthContext.login - Stored in localStorage:', {
+      user: JSON.parse(localStorage.getItem('user') || '{}'),
+      role: localStorage.getItem('role')
+    });
 
     // Redirect based on role or custom path
     const destination = redirectTo || getDefaultRoute(userData.role);

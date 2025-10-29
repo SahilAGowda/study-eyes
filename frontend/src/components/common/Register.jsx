@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Container,
   Paper,
@@ -15,13 +15,18 @@ import { useAuth } from '../../contexts/AuthContext'
 
 const Register = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login } = useAuth()
+  
+  // Get role from URL params (e.g., /register?role=teacher)
+  const role = new URLSearchParams(location.search).get('role') || 'student'
+  
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'student' // Default role
+    role: role // Use role from URL
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -47,12 +52,23 @@ const Register = () => {
     try {
       const { user, token } = await apiService.register(formData.username, formData.email, formData.password)
       
-      // Prepare user data with role
+      console.log('Register response - user:', user)
+      console.log('Register response - user.role:', user.role)
+      console.log('Expected role from URL:', role)
+      
+      // TEMPORARY FIX: If backend doesn't return role, use the portal role
+      const userRole = user.role ? user.role.toLowerCase() : role.toLowerCase()
+      
+      console.log('User role (normalized):', userRole)
+      
+      // Prepare user data with role (use portal role if backend doesn't provide one)
       const userData = {
         ...user,
         token,
-        role: user.role || formData.role || 'student'
+        role: userRole
       }
+      
+      console.log('Registering user with role:', userRole)
       
       // Login will automatically redirect based on role
       login(userData)
@@ -141,7 +157,7 @@ const Register = () => {
                 opacity: 0.8,
               }}
             >
-              Create your account
+              Create your {role.charAt(0).toUpperCase() + role.slice(1)} account
             </Typography>
           </Box>
           
@@ -376,7 +392,7 @@ const Register = () => {
               >
                 Already have an account?{' '}
                 <Link 
-                  href="/login" 
+                  href={`/login?role=${role}`} 
                   variant="body1"
                   sx={{
                     color: '#2196f3',

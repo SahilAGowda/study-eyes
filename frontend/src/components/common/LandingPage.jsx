@@ -41,9 +41,7 @@ const LandingPage = () => {
       bgGradient: 'linear-gradient(135deg, #2196f3 0%, #21cbf3 100%)',
       features: [
         'Real-time focus tracking',
-        'Study session analytics',
-        'Health monitoring',
-        'Progress insights'
+        'Study session analytics'
       ],
       route: '/student-login'
     },
@@ -56,9 +54,7 @@ const LandingPage = () => {
       bgGradient: 'linear-gradient(135deg, #4caf50 0%, #8bc34a 100%)',
       features: [
         'Class overview dashboard',
-        'Student insights',
-        'Session analytics',
-        'Teaching recommendations'
+        'Student insights'
       ],
       route: '/teacher-login'
     },
@@ -71,9 +67,7 @@ const LandingPage = () => {
       bgGradient: 'linear-gradient(135deg, #ff9800 0%, #ffc107 100%)',
       features: [
         'School-wide statistics',
-        'Teacher performance',
-        'Analytics & reports',
-        'System management'
+        'Teacher performance'
       ],
       route: '/management-login'
     }
@@ -109,7 +103,7 @@ const LandingPage = () => {
   };
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
       position: 'relative',
@@ -130,9 +124,9 @@ const LandingPage = () => {
         {/* Header Section */}
         <Fade in timeout={1000}>
           <Box sx={{ textAlign: 'center', mb: 6 }}>
-            <Typography 
-              variant="h2" 
-              sx={{ 
+            <Typography
+              variant="h2"
+              sx={{
                 fontWeight: 800,
                 color: 'white',
                 mb: 2,
@@ -145,9 +139,9 @@ const LandingPage = () => {
             >
               Study Eyes
             </Typography>
-            <Typography 
-              variant="h6" 
-              sx={{ 
+            <Typography
+              variant="h6"
+              sx={{
                 color: 'rgba(255, 255, 255, 0.7)',
                 mb: 3,
                 maxWidth: '600px',
@@ -156,10 +150,11 @@ const LandingPage = () => {
                 fontSize: { xs: '1rem', sm: '1.1rem' }
               }}
             >
-              Advanced eye tracking technology for enhanced learning experiences. 
-              Monitor focus, improve attention, and optimize study sessions with AI-powered insights.
-            </Typography>
-            <Chip 
+              AI-Powered Multimodal Student
+              Engagement Monitoring System
+              with Enhanced Behavioral Recognition for
+              Classroom and E-Learning Environments        </Typography>
+            <Chip
               label="🚀 Powered by AI & Computer Vision"
               sx={{
                 bgcolor: 'rgba(99, 102, 241, 0.15)',
@@ -176,22 +171,22 @@ const LandingPage = () => {
 
         {/* Role Selection Cards */}
         <Box sx={{ mb: 6 }}>
-          <Typography 
-            variant="h4" 
-            sx={{ 
-              textAlign: 'center', 
-              fontWeight: 700, 
-              color: 'white', 
+          <Typography
+            variant="h4"
+            sx={{
+              textAlign: 'center',
+              fontWeight: 700,
+              color: 'white',
               mb: 4,
               fontSize: { xs: '1.5rem', sm: '1.8rem' }
             }}
           >
             Choose Your Role
           </Typography>
-          
+
           <Grid container spacing={3} justifyContent="center">
             {roleOptions.map((role, index) => (
-              <Grid item xs={12} sm={6} md={4} key={role.id}>
+              <Grid item xs={12} sm={6} md={role.id === 'student' ? 8 : 6} lg={4} key={role.id}>
                 <Zoom in timeout={800 + index * 200}>
                   <Card
                     sx={{
@@ -228,7 +223,7 @@ const LandingPage = () => {
                     }}
                     onClick={() => handleRoleSelect(role)}
                   >
-                    <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <CardContent sx={{ p: role.id === 'student' ? 4 : 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
                       {/* Icon and Title */}
                       <Box sx={{ textAlign: 'center', mb: 3 }}>
                         <Box
@@ -247,14 +242,14 @@ const LandingPage = () => {
                             transition: 'all 0.3s ease',
                           }}
                         >
-                          {React.cloneElement(role.icon, { 
-                            sx: { color: 'white', fontSize: 35 } 
+                          {React.cloneElement(role.icon, {
+                            sx: { color: 'white', fontSize: 35 }
                           })}
                         </Box>
-                        
-                        <Typography 
-                          variant="h5" 
-                          sx={{ 
+
+                        <Typography
+                          variant="h5"
+                          sx={{
                             fontWeight: 700,
                             color: 'white',
                             mb: 1,
@@ -263,10 +258,10 @@ const LandingPage = () => {
                         >
                           {role.title}
                         </Typography>
-                        
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
+
+                        <Typography
+                          variant="body2"
+                          sx={{
                             color: 'rgba(255, 255, 255, 0.7)',
                             fontWeight: 500,
                             fontSize: '0.9rem'
@@ -279,11 +274,11 @@ const LandingPage = () => {
                       {/* Features List */}
                       <Box sx={{ flex: 1, mb: 3 }}>
                         {role.features.map((feature, featureIndex) => (
-                          <Box 
+                          <Box
                             key={featureIndex}
-                            sx={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
                               mb: 1.5,
                               p: 1,
                               borderRadius: 1.5,
@@ -304,9 +299,9 @@ const LandingPage = () => {
                               mr: 1.5,
                               flexShrink: 0,
                             }} />
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
+                            <Typography
+                              variant="body2"
+                              sx={{
                                 color: 'rgba(255, 255, 255, 0.8)',
                                 fontWeight: 500,
                                 fontSize: '0.85rem'
@@ -351,19 +346,19 @@ const LandingPage = () => {
         {/* Features Section */}
         <Slide direction="up" in timeout={1200}>
           <Box sx={{ mb: 6 }}>
-            <Typography 
-              variant="h4" 
-              sx={{ 
-                textAlign: 'center', 
-                fontWeight: 700, 
-                color: 'white', 
+            <Typography
+              variant="h4"
+              sx={{
+                textAlign: 'center',
+                fontWeight: 700,
+                color: 'white',
                 mb: 4,
                 fontSize: { xs: '1.5rem', sm: '1.8rem' }
               }}
             >
               Why Choose Study Eyes?
             </Typography>
-            
+
             <Grid container spacing={3} justifyContent="center">
               {features.map((feature, index) => (
                 <Grid item xs={12} sm={6} md={3} key={index}>
@@ -387,7 +382,7 @@ const LandingPage = () => {
                       }
                     }}
                   >
-                    <Box sx={{ 
+                    <Box sx={{
                       mb: 2,
                       display: 'flex',
                       alignItems: 'center',
@@ -400,20 +395,20 @@ const LandingPage = () => {
                     }}>
                       {feature.icon}
                     </Box>
-                    <Typography 
-                      variant="h6" 
-                      sx={{ 
-                        fontWeight: 600, 
-                        color: 'white', 
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
+                        color: 'white',
                         mb: 1.5,
                         fontSize: '1.1rem'
                       }}
                     >
                       {feature.title}
                     </Typography>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
+                    <Typography
+                      variant="body2"
+                      sx={{
                         color: 'rgba(255, 255, 255, 0.7)',
                         lineHeight: 1.5,
                         fontSize: '0.9rem'
@@ -451,21 +446,21 @@ const LandingPage = () => {
                 },
               }}
             >
-              <Typography 
-                variant="h4" 
-                sx={{ 
-                  fontWeight: 700, 
-                  color: 'white', 
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  color: 'white',
                   mb: 2,
                   fontSize: { xs: '1.5rem', sm: '1.8rem' }
                 }}
               >
                 Ready to Transform Learning?
               </Typography>
-              <Typography 
-                variant="body1" 
-                sx={{ 
-                  color: 'rgba(255, 255, 255, 0.8)', 
+              <Typography
+                variant="body1"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.8)',
                   mb: 3,
                   maxWidth: '500px',
                   mx: 'auto',
@@ -473,7 +468,7 @@ const LandingPage = () => {
                   fontSize: '1rem'
                 }}
               >
-                Join thousands of students, teachers, and institutions already using Study Eyes 
+                Join thousands of students, teachers, and institutions already using Study Eyes
                 to enhance focus, improve learning outcomes, and create better educational experiences.
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>

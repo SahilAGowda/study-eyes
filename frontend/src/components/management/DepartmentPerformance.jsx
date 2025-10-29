@@ -28,3 +28,4 @@ const DepartmentPerformance = () => {
 }
 
 export default DepartmentPerformance
+

@@ -50,11 +50,30 @@ const Login = () => {
     try {
       const { user, token } = await apiService.login(formData.email, formData.password)
       
-      // Prepare user data with role
+      console.log('Login response - user:', user)
+      console.log('Login response - user.role:', user.role)
+      console.log('Expected role from URL:', role)
+      
+      // TEMPORARY FIX: If backend doesn't return role, use the portal role
+      // This allows testing until backend is updated to return roles
+      const userRole = user.role ? user.role.toLowerCase() : role.toLowerCase()
+      const expectedRole = role.toLowerCase()
+      
+      console.log('User role (normalized):', userRole)
+      console.log('Expected role (normalized):', expectedRole)
+      
+      // Skip validation if backend doesn't provide role (temporary)
+      if (user.role && userRole !== expectedRole) {
+        setError(`This account is registered as a ${userRole}. Please use the ${userRole} login portal.`)
+        setLoading(false)
+        return
+      }
+      
+      // Prepare user data with role (use portal role if backend doesn't provide one)
       const userData = {
         ...user,
         token,
-        role: user.role || role || 'student' // Use backend role, fallback to URL param or default
+        role: userRole
       }
       
       // Login will automatically redirect based on role
@@ -367,7 +386,7 @@ const Login = () => {
               >
                 Don't have an account?{' '}
                 <Link 
-                  href="/register" 
+                  href={`/register?role=${role}`} 
                   variant="body1"
                   sx={{
                     color: '#2196f3',

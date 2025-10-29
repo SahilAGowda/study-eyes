@@ -28,3 +28,4 @@ const ManagementReports = () => {
 }
 
 export default ManagementReports
+

@@ -49,6 +49,14 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
     }
   }, [navigate])
 
+  // Helper function to convert hex to rgba
+  const hexToRgba = (hex, alpha) => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  }
+
   const handleStartStudying = async () => {
     try {
       if (apiService.isAuthenticated()) {
@@ -87,8 +95,8 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
     },
     {
       title: 'Streak',
-      value: '7',
-      subtitle: 'Days',
+      value: '7 Days',
+      subtitle: 'Current streak',
       icon: <FireIcon />,
       color: '#ff9800',
       gradient: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
@@ -103,6 +111,16 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
       color: '#9c27b0',
       gradient: 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)',
       change: '+3',
+      trend: 'up'
+    },
+    {
+      title: 'Avg Session',
+      value: '2.5h',
+      subtitle: 'Duration',
+      icon: <SpeedIcon />,
+      color: '#e91e63',
+      gradient: 'linear-gradient(135deg, #e91e63 0%, #c2185b 100%)',
+      change: '+0.5h',
       trend: 'up'
     }
   ]
@@ -130,7 +148,7 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
       <Fade in timeout={800}>
         <Box sx={{ 
           mb: 4,
-          p: { xs: 3, md: 4 },
+          p: { xs: 3, md: 5 },
           borderRadius: 0,
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
@@ -167,22 +185,26 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
           <Box sx={{ position: 'relative', zIndex: 1 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 3 }}>
               <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                  <SparkleIcon sx={{ fontSize: 40, opacity: 0.9 }} />
-                  <Typography variant="h3" sx={{ 
-                    fontWeight: 800, 
-                    fontSize: { xs: '2rem', md: '2.5rem' },
-                    textShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                  }}>
-                    Welcome back, {user?.username || 'Student'}! 👋
-                  </Typography>
-                </Box>
-                <Typography variant="h6" sx={{ 
-                  opacity: 0.95, 
-                  fontWeight: 400,
-                  letterSpacing: '0.5px',
-                  fontSize: { xs: '1rem', md: '1.25rem' }
-                }}>
+                <Typography 
+                  variant="h3" 
+                  sx={{ 
+                    fontWeight: 700, 
+                    fontSize: { xs: '2rem', md: '2.75rem' },
+                    mb: 1.5,
+                    textShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  Welcome back, {user?.username || 'Student'}! 👋
+                </Typography>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    opacity: 0.95, 
+                    fontWeight: 500,
+                    letterSpacing: '0.3px',
+                    fontSize: { xs: '1rem', md: '1.2rem' }
+                  }}
+                >
                   Ready to boost your focus and productivity today?
                 </Typography>
               </Box>
@@ -195,21 +217,17 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
                 sx={{
                   bgcolor: 'white',
                   color: '#667eea',
-                  fontWeight: 800,
-                  px: 5,
-                  py: 2.5,
-                  borderRadius: '18px',
+                  fontWeight: 700,
+                  px: 4.5,
+                  py: 2.2,
+                  borderRadius: '16px',
                   textTransform: 'none',
-                  fontSize: '1.15rem',
-                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-                  border: '3px solid rgba(255, 255, 255, 0.4)',
+                  fontSize: '1.1rem',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
                   '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.98)',
-                    transform: 'translateY(-3px) scale(1.03)',
-                    boxShadow: '0 14px 35px rgba(0, 0, 0, 0.3)'
-                  },
-                  '&:active': {
-                    transform: 'translateY(-1px) scale(0.99)'
+                    bgcolor: 'rgba(255, 255, 255, 0.95)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 12px 32px rgba(0, 0, 0, 0.2)'
                   },
                   '&:disabled': {
                     bgcolor: 'rgba(255, 255, 255, 0.5)',
@@ -229,99 +247,67 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
       <Box sx={{ px: { xs: 2, md: 4 }, mb: 5 }}>
         <Grid container spacing={3} sx={{ maxWidth: '100%' }}>
           {stats.map((stat, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
+            <Grid item xs={12} sm={6} md={4} key={index}>
             <Grow in timeout={600 + index * 100}>
               <Card
                 sx={{
-                  background: '#FFFFFF',
+                  background: `linear-gradient(135deg, ${hexToRgba(stat.color, 0.15)}, ${hexToRgba(stat.color, 0.05)})`,
+                  backdropFilter: 'blur(20px)',
+                  border: `1px solid ${hexToRgba(stat.color, 0.3)}`,
                   borderRadius: '16px',
                   overflow: 'visible',
-                  transition: 'all 0.3s ease',
-                  border: '1px solid #E5E7EB',
-                  position: 'relative',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   cursor: 'pointer',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '4px',
-                    background: stat.gradient,
-                    borderRadius: '16px 16px 0 0'
-                  },
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)',
-                    borderColor: '#D1D5DB',
-                    '& .stat-icon': {
-                      transform: 'scale(1.05)'
-                    }
+                    transform: 'translateY(-8px)',
+                    boxShadow: `0 20px 40px ${hexToRgba(stat.color, 0.2)}`,
+                    borderColor: `${hexToRgba(stat.color, 0.5)}`,
                   }
                 }}
               >
-                <CardContent sx={{ p: 4 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+                <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                     <Box
-                      className="stat-icon"
                       sx={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: '16px',
-                        background: stat.gradient,
+                        mr: 2,
+                        color: stat.color,
+                        fontSize: 32,
+                        filter: `drop-shadow(0 0 8px ${stat.color}40)`,
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: `0 4px 12px ${stat.color}40`,
-                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                        justifyContent: 'center'
                       }}
                     >
-                      {React.cloneElement(stat.icon, { sx: { color: 'white', fontSize: 28 } })}
+                      {React.cloneElement(stat.icon, { sx: { fontSize: 32, color: stat.color } })}
                     </Box>
-                    <Chip
-                      icon={<TrendingUpIcon sx={{ fontSize: 14 }} />}
-                      label={stat.change}
-                      size="small"
+                    <Typography 
+                      variant="h6"
                       sx={{
-                        height: 24,
-                        bgcolor: 'transparent',
-                        color: stat.color,
-                        fontWeight: 700,
-                        fontSize: '0.75rem',
-                        border: 'none',
-                        '& .MuiChip-icon': {
-                          color: stat.color
-                        }
+                        fontWeight: 600,
+                        background: stat.gradient,
+                        backgroundClip: 'text',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
                       }}
-                    />
+                    >
+                      {stat.title}
+                    </Typography>
                   </Box>
-                  <Typography variant="caption" sx={{ 
-                    color: '#6B7280', 
-                    fontWeight: 600, 
-                    textTransform: 'uppercase', 
-                    letterSpacing: 0.5, 
-                    display: 'block', 
-                    mb: 1.5,
-                    fontSize: '0.8rem'
-                  }}>
-                    {stat.title}
-                  </Typography>
                   <Typography 
-                    className="stat-value"
-                    variant="h2" 
+                    variant="h4" 
                     sx={{ 
-                      fontWeight: 800, 
-                      mb: 1,
+                      fontWeight: 700, 
                       color: stat.color,
-                      transition: 'all 0.4s ease',
-                      fontSize: '3rem',
-                      lineHeight: 1
+                      textShadow: `0 0 20px ${stat.color}30`,
+                      mb: 1,
                     }}
                   >
                     {stat.value}
                   </Typography>
-                  <Typography variant="body1" sx={{ color: '#6B7280', fontWeight: 500, fontSize: '0.95rem' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                     {stat.subtitle}
                   </Typography>
                 </CardContent>
@@ -343,27 +329,24 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
             <Paper sx={{ 
               p: 4, 
               borderRadius: '20px', 
-              background: '#FFFFFF',
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.05))',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(139, 92, 246, 0.3)',
+              boxShadow: 'none'
             }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '14px',
-                    background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <TimerIcon sx={{ color: 'white', fontSize: 26 }} />
-                  </Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827', fontSize: '1.25rem' }}>
-                    Recent Sessions
-                  </Typography>
-                </Box>
+                <Typography 
+                  variant="h6" 
+                  sx={{
+                    fontWeight: 600,
+                    background: 'linear-gradient(45deg, #8B5CF6, #7C3AED)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  📅 Recent Sessions
+                </Typography>
                 <Button
                   endIcon={<ArrowIcon />}
                   sx={{ 
@@ -380,68 +363,71 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
                   View All
                 </Button>
               </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {recentSessions.map((session, index) => (
-                <Box
+                <Card 
                   key={index}
-                  sx={{
-                    p: 3,
+                  sx={{ 
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
                     borderRadius: '16px',
-                    background: '#F9FAFB',
-                    border: '1px solid #E5E7EB',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 3,
-                    transition: 'all 0.2s ease',
-                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
                     '&:hover': {
-                      background: '#F3F4F6',
-                      borderColor: '#D1D5DB',
-                      transform: 'translateX(4px)'
-                    }
+                      transform: 'translateX(8px)',
+                      boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
+                      borderColor: 'rgba(139, 92, 246, 0.4)',
+                    },
                   }}
                 >
-                  <Box
-                    sx={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: '16px',
-                      background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}
-                  >
-                    <TimerIcon sx={{ color: 'white', fontSize: 28 }} />
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, color: '#111827', fontSize: '1.05rem' }}>
-                      {session.date}
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#6B7280', fontWeight: 500, fontSize: '0.9rem' }}>
-                      Duration: {session.duration}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    <Box sx={{ textAlign: 'right' }}>
-                      <Typography variant="caption" sx={{ color: '#6B7280', fontWeight: 600, fontSize: '0.8rem', display: 'block', mb: 0.5 }}>
-                        Focus
+                  <CardContent sx={{ py: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography 
+                        variant="h6" 
+                        sx={{ 
+                          minWidth: 100,
+                          fontWeight: 700,
+                          background: 'linear-gradient(45deg, #8B5CF6, #7C3AED)',
+                          backgroundClip: 'text',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                        }}
+                      >
+                        {session.date}
                       </Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 800, color: '#10B981', fontSize: '1.25rem', lineHeight: 1 }}>
-                        {session.focus}%
-                      </Typography>
+                      <Box sx={{ flex: 1, mx: 4 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>Duration</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#8B5CF6' }}>
+                            {session.duration}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 1.5 }}>
+                        <Chip 
+                          label={`${session.focus}%`} 
+                          size="small" 
+                          sx={{ 
+                            background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
+                            color: 'white',
+                            fontWeight: 600,
+                            boxShadow: '0 2px 8px rgba(76, 175, 80, 0.4)',
+                          }}
+                        />
+                        <Chip 
+                          label={`${session.attention}%`} 
+                          size="small" 
+                          sx={{
+                            background: 'rgba(33, 150, 243, 0.2)',
+                            color: '#2196f3',
+                            border: '1px solid rgba(33, 150, 243, 0.3)',
+                            fontWeight: 600,
+                          }}
+                        />
+                      </Box>
                     </Box>
-                    <Box sx={{ textAlign: 'right' }}>
-                      <Typography variant="caption" sx={{ color: '#6B7280', fontWeight: 600, fontSize: '0.8rem', display: 'block', mb: 0.5 }}>
-                        Attention
-                      </Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 800, color: '#3B82F6', fontSize: '1.25rem', lineHeight: 1 }}>
-                        {session.attention}%
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
+                  </CardContent>
+                </Card>
               ))}
             </Box>
             </Paper>
@@ -455,64 +441,75 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
             <Paper sx={{ 
               p: 4, 
               borderRadius: '20px', 
-              background: '#FFFFFF',
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              background: 'linear-gradient(135deg, rgba(247, 115, 22, 0.15), rgba(234, 88, 12, 0.05))',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(247, 115, 22, 0.3)',
+              boxShadow: 'none'
             }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-                <Box sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: '14px',
-                  background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <TrophyIcon sx={{ color: 'white', fontSize: 26 }} />
-                </Box>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827', fontSize: '1.25rem' }}>
-                  Your Goals
-                </Typography>
-              </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <Typography 
+                variant="h6" 
+                sx={{
+                  fontWeight: 600,
+                  background: 'linear-gradient(45deg, #F97316, #EA580C)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  mb: 3,
+                }}
+              >
+                🎯 Your Goals
+              </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               {goals.map((goal, index) => {
                 const progress = (goal.current / goal.target) * 100
+                const gradients = [
+                  'linear-gradient(45deg, #F97316, #EA580C)',
+                  'linear-gradient(45deg, #8B5CF6, #7C3AED)',
+                  'linear-gradient(45deg, #4caf50, #66bb6a)'
+                ]
                 return (
-                  <Box 
+                  <Card 
                     key={index}
-                    sx={{
-                      mb: 0
+                    sx={{ 
+                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '16px',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-5px)',
+                        boxShadow: '0 15px 35px rgba(247, 115, 22, 0.2)',
+                      },
                     }}
                   >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827', fontSize: '1.05rem' }}>
-                        {goal.title}
+                    <CardContent sx={{ p: 3 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.05rem' }}>
+                          {goal.title}
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 700, color: '#F97316', fontSize: '0.95rem' }}>
+                          {goal.current}/{goal.target} {goal.unit}
+                        </Typography>
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={progress}
+                        sx={{
+                          height: 12,
+                          borderRadius: 6,
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          '& .MuiLinearProgress-bar': {
+                            background: gradients[index],
+                            borderRadius: 6,
+                            boxShadow: '0 0 15px rgba(247, 115, 22, 0.4)',
+                          }
+                        }}
+                      />
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mt: 1.5, fontSize: '0.85rem' }}>
+                        {progress.toFixed(0)}% Complete
                       </Typography>
-                      <Typography variant="body1" sx={{ color: '#6B7280', fontWeight: 600, fontSize: '0.95rem' }}>
-                        {goal.current}/{goal.target} {goal.unit}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={progress}
-                      sx={{
-                        height: 10,
-                        borderRadius: 10,
-                        bgcolor: '#E5E7EB',
-                        '& .MuiLinearProgress-bar': {
-                          borderRadius: 10,
-                          background: index === 0 ? 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)' : 
-                                     index === 1 ? 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)' :
-                                     'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)',
-                          transition: 'all 0.3s ease'
-                        }
-                      }}
-                    />
-                    <Typography variant="body2" sx={{ color: '#6B7280', fontWeight: 600, mt: 1.5, display: 'block', fontSize: '0.85rem' }}>
-                      {progress.toFixed(0)}% Complete
-                    </Typography>
-                  </Box>
+                    </CardContent>
+                  </Card>
                 )
               })}
             </Box>

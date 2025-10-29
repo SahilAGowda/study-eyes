@@ -18,7 +18,6 @@ import {
 // Student Components
 import StudentDashboard from './components/student/Dashboard'
 import StudySession from './components/student/StudySession'
-import StudySessionFullscreen from './components/student/StudySessionFullscreen'
 import StudentAnalytics from './components/student/Analytics'
 import StudentSettings from './components/student/Settings'
 import CameraTest from './components/student/CameraTest'
@@ -31,6 +30,7 @@ import Reports from './components/student/Reports'
 // Teacher Components
 import TeacherDashboard from './components/teacher/Dashboard'
 import LiveClass from './components/teacher/LiveClass'
+import LiveSession from './components/teacher/LiveSession'
 import QuizzesExams from './components/teacher/QuizzesExams'
 import ReportsAnalytics from './components/teacher/ReportsAnalytics'
 import TeacherSettings from './components/teacher/Settings'
@@ -57,7 +57,7 @@ export const roleRoutes = {
   student: [
     { path: 'dashboard', element: StudentDashboard, requiresAuth: true },
     { path: 'study', element: StudySession, requiresAuth: true },
-    { path: 'study-fullscreen', element: StudySessionFullscreen, requiresAuth: true },
+    { path: 'study-session', element: StudySession, requiresAuth: true },
     { path: 'analytics', element: StudentAnalytics, requiresAuth: true },
     { path: 'settings', element: StudentSettings, requiresAuth: true },
     { path: 'camera-test', element: CameraTest, requiresAuth: true },
@@ -70,6 +70,7 @@ export const roleRoutes = {
   teacher: [
     { path: 'dashboard', element: TeacherDashboard, requiresAuth: true },
     { path: 'live-class', element: LiveClass, requiresAuth: true },
+    { path: 'live-session', element: LiveSession, requiresAuth: true },
     { path: 'quizzes-exams', element: QuizzesExams, requiresAuth: true },
     { path: 'reports-analytics', element: ReportsAnalytics, requiresAuth: true },
     { path: 'settings', element: TeacherSettings, requiresAuth: true },
