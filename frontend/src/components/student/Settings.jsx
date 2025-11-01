@@ -1,3906 +1,1275 @@
-import React, { useState } from 'react'
-import {
-  Container,
-  Grid,
-  Card,
-  CardContent,
-  CardHeader,
-  Typography,
-  Box,
-  Paper,
-  Switch,
-  FormControlLabel,
-  Slider,
-  Button,
-  Divider,
-  TextField,
-  MenuItem,
-  Alert,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  ListItemButton,
-  Avatar,
-  IconButton,
-  Badge,
-  Tabs,
-  Tab,
-  Select,
-  FormControl,
-  InputLabel,
-  FormHelperText,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormGroup,
-  Checkbox,
-  Tooltip,
-  InputAdornment,
-  Stack,
-  Snackbar
-} from '@mui/material'
-import {
-  Notifications as NotificationsIcon,
-  Visibility as EyeIcon,
-  HealthAndSafety as HealthIcon,
-  Timer as TimerIcon,
-  Save as SaveIcon,
-  Person as PersonIcon,
-  Security as SecurityIcon,
-  Settings as SettingsIcon,
-  Palette as PaletteIcon,
-  AccessTime as AccessTimeIcon,
-  Videocam as CameraIcon,
-  Help as HelpIcon,
-  Info as InfoIcon,
-  Lock as LockIcon,
-  DataUsage as DataIcon,
-  Edit as EditIcon,
-  PhotoCamera as PhotoCameraIcon,
-  Delete as DeleteIcon,
-  Google as GoogleIcon,
-  Microsoft as MicrosoftIcon,
-  Email as EmailIcon,
-  Warning as WarningIcon,
-  VolumeUp as VolumeUpIcon,
-  VolumeOff as VolumeOffIcon,
-  Mic as MicIcon,
-  Tune as TuneIcon,
-  AccessTime as TimeIcon,
-  DoNotDisturb as DoNotDisturbIcon,
-  AddAPhoto as AddPhotoIcon,
-  Check as CheckIcon,
-  Close as CloseIcon,
-  ArrowForward as ArrowForwardIcon,
-  Language as LanguageIcon,
-  Public as PublicIcon,
-  Link as LinkIcon,
-  LinkOff as UnlinkIcon,
-  Download as DownloadIcon,
-  DeleteForever as DeleteForeverIcon,
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
-  Smartphone as SmartphoneIcon,
-  Add as AddIcon,
-  CheckCircle as CheckCircleIcon
-} from '@mui/icons-material'
-import { useAuth } from '../../contexts/AuthContext'
-
-// Constants for dropdown options
-const GRADE_OPTIONS = [
-  'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 
-  'Grade 11', 'Grade 12', 'College Freshman', 'College Sophomore',
-  'College Junior', 'College Senior', 'Graduate Student'
-];
-
-const LANGUAGE_OPTIONS = [
-  'English', 'Spanish', 'French', 'German', 'Chinese', 
-  'Japanese', 'Korean', 'Hindi', 'Arabic', 'Russian'
-];
-
-const TIMEZONE_OPTIONS = [
-  'UTC-12:00', 'UTC-11:00', 'UTC-10:00', 'UTC-09:00', 'UTC-08:00',
-  'UTC-07:00', 'UTC-06:00', 'UTC-05:00', 'UTC-04:00', 'UTC-03:00',
-  'UTC-02:00', 'UTC-01:00', 'UTC+00:00', 'UTC+01:00', 'UTC+02:00',
-  'UTC+03:00', 'UTC+04:00', 'UTC+05:00', 'UTC+05:30', 'UTC+06:00',
-  'UTC+07:00', 'UTC+08:00', 'UTC+09:00', 'UTC+10:00', 'UTC+11:00',
-  'UTC+12:00'
-];
-
-const DATA_RETENTION_OPTIONS = [
-  '1 month', '3 months', '6 months', '1 year', '2 years', 'Until manually deleted'
-];
-
-const NOTIFICATION_FREQUENCY_OPTIONS = [
-  'Instant', 'Hourly', 'Daily', 'Weekly', 'Real-time', 'As needed'
-];
-
-const DAYS_OF_WEEK = [
-  { key: 'mon', label: 'Mon' },
-  { key: 'tue', label: 'Tue' },
-  { key: 'wed', label: 'Wed' },
-  { key: 'thu', label: 'Thu' },
-  { key: 'fri', label: 'Fri' },
-  { key: 'sat', label: 'Sat' },
-  { key: 'sun', label: 'Sun' }
-];
-
-// Mock parent emails for demonstration
-const PARENT_EMAILS = [
-  { email: 'parent1@example.com', verified: true },
-  { email: 'parent2@example.com', verified: false }
-];
-
-// Auto-delete options
-const AUTO_DELETE_OPTIONS = [
-  { value: 'never', label: 'Never' },
-  { value: '30days', label: 'After 30 days' },
-  { value: '90days', label: 'After 90 days' },
-  { value: '1year', label: 'After 1 year' }
-];
-
-// Notification frequency options
-const NOTIFICATION_FREQUENCY = {
-  quiz: [
-    { value: 'immediately', label: 'Immediately' },
-    { value: 'daily', label: 'Daily Summary' },
-    { value: 'weekly', label: 'Weekly Summary' }
-  ],
-  engagement: [
-    { value: 'realtime', label: 'Real-time Updates' },
-    { value: 'daily', label: 'Daily Report' },
-    { value: 'weekly', label: 'Weekly Report' }
-  ],
-  teacher: [
-    { value: 'immediately', label: 'Immediately' },
-    { value: 'daily', label: 'Once Daily' },
-    { value: 'weekly', label: 'Weekly Summary' }
-  ],
-  achievement: [
-    { value: 'immediately', label: 'Immediately' },
-    { value: 'daily', label: 'Daily Roundup' },
-    { value: 'weekly', label: 'Weekly Roundup' }
-  ],
-  schedule: [
-    { value: 'immediately', label: 'Immediately' },
-    { value: 'daily', label: 'Daily Schedule' },
-    { value: 'weekly', label: 'Weekly Schedule' }
-  ],
-  system: [
-    { value: 'critical', label: 'Critical Only' },
-    { value: 'important', label: 'Important & Critical' },
-    { value: 'all', label: 'All Updates' }
-  ]
-};
-
-// Connected accounts data
-const CONNECTED_ACCOUNTS = [
-  {
-    platform: 'Google',
-    connected: false,
-    email: '',
-    icon: <GoogleIcon />,
-    color: '#DB4437'
-  },
-  {
-    platform: 'Microsoft',
-    connected: false,
-    email: '',
-    icon: <MicrosoftIcon />,
-    color: '#00A4EF'
-  }
-];
-
-// Settings sections
-const SECTIONS = [
-  { id: 'profile', label: 'Profile & Account', icon: <PersonIcon /> },
-  { id: 'privacy', label: 'Privacy & Data', icon: <DataIcon /> },
-  { id: 'notifications', label: 'Notifications', icon: <NotificationsIcon /> },
-  { id: 'study', label: 'Study Preferences', icon: <TuneIcon /> },
-  { id: 'appearance', label: 'Appearance', icon: <PaletteIcon /> },
-  { id: 'camera', label: 'Camera & Audio', icon: <CameraIcon /> },
-  { id: 'security', label: 'Security', icon: <SecurityIcon /> },
-  { id: 'help', label: 'Help & Support', icon: <HelpIcon /> },
-  { id: 'about', label: 'About', icon: <InfoIcon /> }
-];
+import React, { useState } from 'react';
+import { Camera, Mic, Bell, Lock, User, Eye, Palette, Book, HelpCircle, Info, ChevronRight, Save, X, Check, AlertTriangle, Upload, Moon, Sun, Shield, LogOut, Trash2, Download, Settings as SettingsIcon, Mail, Phone, Calendar, Globe, Clock } from 'lucide-react';
 
 const Settings = () => {
-  const { user } = useAuth();
   const [activeSection, setActiveSection] = useState('profile');
-  const [saveStatus, setSaveStatus] = useState('');
-  const [openDialog, setOpenDialog] = useState('');
-  
-  // Unified settings state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [showModal, setShowModal] = useState(null);
+
   const [settings, setSettings] = useState({
-    profile: {
-      fullName: 'Test User',
-      email: 'test1@student.com',
-      studentId: 'STU-2024-001',
-      grade: 'Grade 10',
-      dob: '',
-      phone: '',
-      username: 'test1',
-      language: 'English',
-      timezone: 'Asia/Kolkata (GMT+5:30)',
-      avatar: null,
-      connectedAccounts: {
-        google: false,
-        microsoft: false
-      },
-      parentEmails: []
-    },
-    privacy: {
-      masterToggle: true,
-      videoAnalysis: true,
-      audioAnalysis: true,
-      physiologicalSignals: true,
-      screenActivity: true,
-      dataRetention: '6 months',
-      anonymousBenchmarking: false,
-      shareWithTeachers: true,
-      shareWithParents: true,
-      participateInResearch: false,
-      saveSessionRecordings: false,
-      autoDeleteRecordings: '7 days'
-    },
-    notifications: {
-      inApp: true,
-      email: true,
-      sms: false,
-      push: true,
-      eyeBreakReminder: true,
-      postureAlert: true,
-      studyGoalReminder: true,
-      dailySummary: true,
-      sessionAlerts: true,
-      achievementAlerts: true,
-      types: {
-        quiz: { enabled: true, frequency: 'Instant' },
-        engagement: { enabled: true, frequency: 'Real-time' },
-        teacher: { enabled: true, frequency: 'Instant' },
-        achievement: { enabled: true, frequency: 'Instant' },
-        schedule: { enabled: true, frequency: 'Instant' },
-        system: { enabled: true, frequency: 'As needed' }
-      },
-      quietHours: {
-        enabled: true,
-        start: '22:00',
-        end: '07:00',
-        days: {
-          mon: false, tue: false, wed: false,
-          thu: false, fri: false, sat: true, sun: true
-        }
-      },
-      sound: {
-        enabled: true,
-        volume: 70
-      }
-    },
-    study: {
-      focusMode: false,
-      dailyGoal: 4,
-      weeklyGoal: 20,
-      sessionReminder: 30,
-      ai: {
-        attentionTracking: true,
-        faceDetection: true,
-        postureAnalysis: true
-      }
-    },
-    eyeBreak: {
-      enabled: true,
-      interval: 20,
-      duration: 20
-    },
-    posture: {
-      enabled: true,
-      sensitivity: 75
-    }
+    fullName: 'Alex Johnson',
+    email: 'alex.johnson@school.edu',
+    emailVerified: true,
+    phone: '+1 (555) 123-4567',
+    grade: '10',
+    dateOfBirth: '2008-05-15',
+    username: 'alexj2024',
+    language: 'en',
+    timezone: 'America/New_York',
+    parentEmail: 'parent@email.com',
+    engagementMonitoring: true,
+    videoAnalysis: false,
+    audioAnalysis: true,
+    physiologicalSignals: false,
+    screenActivity: true,
+    dataRetention: '1year',
+    anonymizedBenchmarking: true,
+    shareWithTeachers: true,
+    shareWithParents: true,
+    sessionRecording: true,
+    autoDeleteRecordings: '30days',
+    inAppNotifications: true,
+    emailNotifications: true,
+    smsNotifications: false,
+    pushNotifications: true,
+    quizReminders: true,
+    teacherMessages: true,
+    engagementAlerts: true,
+    quietHoursEnabled: false,
+    quietHoursStart: '22:00',
+    quietHoursEnd: '07:00',
+    notificationSound: true,
+    emailDigest: 'daily',
+    learningStyle: 'visual',
+    dailyStudyGoal: 60,
+    weeklyEngagement: 300,
+    focusSessionDuration: 25,
+    breakFrequency: 5,
+    studyReminders: true,
+    streakReminders: true,
+    defaultSessionLength: 30,
+    autoStartNext: false,
+    backgroundMusic: 'lofi',
+    aiRecommendations: true,
+    theme: 'light',
+    fontSize: 'medium',
+    compactView: false,
+    animations: true,
+    reduceMotion: false,
+    dateFormat: 'MM/DD/YYYY',
+    firstDayOfWeek: 'sunday',
+    selectedCamera: 'default',
+    videoQuality: 'hd',
+    autoEnableCamera: false,
+    selectedMicrophone: 'default',
+    micVolume: 75,
+    noiseCancellation: true,
+    autoEnableMic: false,
+    showPrivacyIndicator: true,
+    blurBackground: false,
+    twoFactorEnabled: false,
+    autoLogout: 30,
+    requirePasswordForData: true
   });
 
-  // Core settings handlers
-  const handleSettingChange = (category, setting, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [setting]: value
-      }
-    }));
+  const [tempPassword, setTempPassword] = useState({ current: '', new: '', confirm: '' });
+
+  const menuSections = [
+    { id: 'profile', icon: User, label: 'Profile & Account' },
+    { id: 'privacy', icon: Eye, label: 'Privacy & Data' },
+    { id: 'notifications', icon: Bell, label: 'Notifications' },
+    { id: 'study', icon: Book, label: 'Study Preferences' },
+    { id: 'appearance', icon: Palette, label: 'Appearance' },
+    { id: 'camera', icon: Camera, label: 'Camera & Audio' },
+    { id: 'security', icon: Lock, label: 'Security' },
+    { id: 'help', icon: HelpCircle, label: 'Help & Support' },
+    { id: 'about', icon: Info, label: 'About' }
+  ];
+
+  const updateSetting = (key, value) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+    setUnsavedChanges(true);
   };
 
-  const handleNestedSettingChange = (category, subcategory, setting, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [subcategory]: {
-          ...prev[category]?.[subcategory],
-          [setting]: value
-        }
-      }
-    }));
+  const handleSave = () => {
+    setTimeout(() => {
+      setUnsavedChanges(false);
+      setToastMessage('Changes saved successfully!');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }, 500);
   };
 
-  // Input type handlers
-  const handleSwitchChange = (category, setting) => (event) => {
-    handleSettingChange(category, setting, event.target.checked);
+  const handleCancel = () => {
+    setUnsavedChanges(false);
+    setToastMessage('Changes discarded');
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
   };
 
-  const handleSliderChange = (category, setting) => (event, value) => {
-    handleSettingChange(category, setting, value);
+  const showSuccessToast = (message) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
   };
 
-  const handleNumberChange = (category, setting) => (event) => {
-    const value = parseInt(event.target.value, 10);
-    if (!isNaN(value)) {
-      handleSettingChange(category, setting, value);
+  const Modal = ({ title, children, onClose, onConfirm, danger = false }) => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <h3 className="text-xl font-bold mb-4 text-gray-800">{title}</h3>
+          {children}
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className={`flex-1 px-4 py-2.5 rounded-lg text-white transition-colors font-medium ${
+                danger ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
+              }`}
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const SettingCard = ({ title, description, children }) => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-5 hover:shadow-md transition-shadow">
+      <h3 className="text-lg font-bold text-gray-800 mb-1">{title}</h3>
+      {description && <p className="text-sm text-gray-500 mb-5">{description}</p>}
+      {children}
+    </div>
+  );
+
+  const Toggle = ({ enabled, onChange, label, description }) => (
+    <div className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+      <div className="flex-1">
+        <span className="text-gray-800 font-medium block">{label}</span>
+        {description && <span className="text-sm text-gray-500">{description}</span>}
+      </div>
+      <button
+        onClick={() => onChange(!enabled)}
+        className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
+          enabled ? 'bg-blue-500' : 'bg-gray-300'
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${
+            enabled ? 'translate-x-6' : 'translate-x-0'
+          }`}
+        />
+      </button>
+    </div>
+  );
+
+  const InputField = ({ label, icon: Icon, ...props }) => (
+    <div>
+      <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
+      <div className="relative">
+        {Icon && <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />}
+        <input
+          {...props}
+          className={`w-full ${Icon ? 'pl-10' : 'pl-4'} pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all outline-none text-gray-900`}
+        />
+      </div>
+    </div>
+  );
+
+  const SelectField = ({ label, icon: Icon, children, ...props }) => (
+    <div>
+      <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
+      <div className="relative">
+        {Icon && <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10" size={18} />}
+        <select
+          {...props}
+          className={`w-full ${Icon ? 'pl-10' : 'pl-4'} pr-10 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all outline-none appearance-none text-gray-900`}
+        >
+          {children}
+        </select>
+        <ChevronRight className="absolute right-3 top-1/2 transform -translate-y-1/2 rotate-90 text-gray-400 pointer-events-none" size={18} />
+      </div>
+    </div>
+  );
+
+  const renderProfileSection = () => (
+    <div>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Profile & Account</h2>
+      
+      <SettingCard title="Profile Information">
+        <div className="flex flex-col md:flex-row items-center gap-6 mb-8 pb-6 border-b border-gray-100">
+          <div className="relative group">
+            <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
+              AJ
+            </div>
+            <button className="absolute bottom-0 right-0 bg-blue-500 text-white p-2.5 rounded-full hover:bg-blue-600 transition-all shadow-lg hover:scale-110">
+              <Upload size={18} />
+            </button>
+          </div>
+          <div className="text-center md:text-left">
+            <h4 className="text-xl font-bold text-gray-800">{settings.fullName}</h4>
+            <p className="text-gray-500">@{settings.username}</p>
+            <div className="flex items-center gap-2 mt-2 justify-center md:justify-start">
+              <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm font-medium">Grade {settings.grade}</span>
+              {settings.emailVerified && (
+                <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-sm font-medium flex items-center gap-1">
+                  <Check size={14} /> Verified
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <InputField label="Full Name" icon={User} type="text" value={settings.fullName} onChange={(e) => updateSetting('fullName', e.target.value)} />
+          <InputField label="Username" type="text" value={settings.username} onChange={(e) => updateSetting('username', e.target.value)} />
+          <InputField label="Email Address" icon={Mail} type="email" value={settings.email} onChange={(e) => updateSetting('email', e.target.value)} />
+          <InputField label="Phone Number" icon={Phone} type="tel" value={settings.phone} onChange={(e) => updateSetting('phone', e.target.value)} />
+          <SelectField label="Grade Level" value={settings.grade} onChange={(e) => updateSetting('grade', e.target.value)}>
+            {[9, 10, 11, 12].map(g => <option key={g} value={g}>Grade {g}</option>)}
+          </SelectField>
+          <InputField label="Date of Birth" icon={Calendar} type="date" value={settings.dateOfBirth} onChange={(e) => updateSetting('dateOfBirth', e.target.value)} />
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Account Settings">
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <SelectField label="Preferred Language" icon={Globe} value={settings.language} onChange={(e) => updateSetting('language', e.target.value)}>
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+            </SelectField>
+            <SelectField label="Time Zone" icon={Clock} value={settings.timezone} onChange={(e) => updateSetting('timezone', e.target.value)}>
+              <option value="America/New_York">Eastern Time (ET)</option>
+              <option value="America/Chicago">Central Time (CT)</option>
+              <option value="America/Denver">Mountain Time (MT)</option>
+              <option value="America/Los_Angeles">Pacific Time (PT)</option>
+            </SelectField>
+          </div>
+          <InputField label="Parent/Guardian Email" icon={Mail} type="email" value={settings.parentEmail} onChange={(e) => updateSetting('parentEmail', e.target.value)} />
+          <button
+            onClick={() => setShowModal('password')}
+            className="w-full px-5 py-3 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-600 rounded-lg hover:from-blue-100 hover:to-blue-200 transition-all font-medium flex items-center justify-center gap-2 border border-blue-200"
+          >
+            <Lock size={18} />
+            Change Password
+          </button>
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Danger Zone">
+        <div className="bg-red-50 border border-red-100 rounded-lg p-4 mb-4">
+          <p className="text-sm text-red-700 flex items-start gap-2">
+            <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
+            <span>These actions are irreversible. Please be certain before proceeding.</span>
+          </p>
+        </div>
+        <div className="space-y-3">
+          <button
+            onClick={() => setShowModal('deactivate')}
+            className="w-full px-5 py-3 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors font-medium border border-orange-200"
+          >
+            Deactivate Account
+          </button>
+          <button
+            onClick={() => setShowModal('delete')}
+            className="w-full px-5 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium border border-red-200"
+          >
+            Delete Account Permanently
+          </button>
+        </div>
+      </SettingCard>
+    </div>
+  );
+
+  const renderPrivacySection = () => (
+    <div>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Privacy & Data</h2>
+      
+      <SettingCard title="Data Collection" description="Control what data is collected during your study sessions">
+        <div className="space-y-1">
+          <Toggle enabled={settings.engagementMonitoring} onChange={(v) => updateSetting('engagementMonitoring', v)} label="Engagement Monitoring" description="Track your focus and participation" />
+          <Toggle enabled={settings.videoAnalysis} onChange={(v) => updateSetting('videoAnalysis', v)} label="Video Analysis" description="Analyze facial expressions and attention" />
+          <Toggle enabled={settings.audioAnalysis} onChange={(v) => updateSetting('audioAnalysis', v)} label="Audio Analysis" description="Monitor voice patterns and participation" />
+          <Toggle enabled={settings.physiologicalSignals} onChange={(v) => updateSetting('physiologicalSignals', v)} label="Physiological Signals" description="Track heart rate and stress levels" />
+          <Toggle enabled={settings.screenActivity} onChange={(v) => updateSetting('screenActivity', v)} label="Screen Activity Tracking" description="Monitor screen time and app usage" />
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Data Retention">
+        <div className="space-y-5">
+          <SelectField label="Keep my data for" value={settings.dataRetention} onChange={(e) => updateSetting('dataRetention', e.target.value)}>
+            <option value="6months">6 Months</option>
+            <option value="1year">1 Year</option>
+            <option value="2years">2 Years</option>
+            <option value="forever">Forever</option>
+          </SelectField>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <button className="px-5 py-3 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 font-medium border border-blue-200">
+              <Download size={18} /> Download My Data
+            </button>
+            <button className="px-5 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-2 font-medium border border-red-200">
+              <Trash2 size={18} /> Delete My Data
+            </button>
+          </div>
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Privacy Settings" description="Control who can see your data">
+        <div className="space-y-1">
+          <Toggle enabled={settings.anonymizedBenchmarking} onChange={(v) => updateSetting('anonymizedBenchmarking', v)} label="Anonymized Benchmarking" description="Compare your performance anonymously" />
+          <Toggle enabled={settings.shareWithTeachers} onChange={(v) => updateSetting('shareWithTeachers', v)} label="Share Data with Teachers" description="Allow teachers to view your progress" />
+          <Toggle enabled={settings.shareWithParents} onChange={(v) => updateSetting('shareWithParents', v)} label="Share Data with Parents" description="Allow parents to see your activity" />
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Session Recording">
+        <div className="space-y-5">
+          <Toggle enabled={settings.sessionRecording} onChange={(v) => updateSetting('sessionRecording', v)} label="Enable Session Recording" description="Record study sessions for review" />
+          <SelectField label="Auto-delete recordings after" value={settings.autoDeleteRecordings} onChange={(e) => updateSetting('autoDeleteRecordings', e.target.value)}>
+            <option value="7days">7 Days</option>
+            <option value="30days">30 Days</option>
+            <option value="90days">90 Days</option>
+            <option value="never">Never</option>
+          </SelectField>
+        </div>
+      </SettingCard>
+    </div>
+  );
+
+  const renderNotificationsSection = () => (
+    <div>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Notifications</h2>
+      
+      <SettingCard title="Delivery Methods" description="Choose how you want to receive notifications">
+        <div className="space-y-1">
+          <Toggle enabled={settings.inAppNotifications} onChange={(v) => updateSetting('inAppNotifications', v)} label="In-App Notifications" description="Show notifications within the app" />
+          <Toggle enabled={settings.emailNotifications} onChange={(v) => updateSetting('emailNotifications', v)} label="Email Notifications" description="Receive updates via email" />
+          <Toggle enabled={settings.smsNotifications} onChange={(v) => updateSetting('smsNotifications', v)} label="SMS Notifications" description="Get text message alerts" />
+          <Toggle enabled={settings.pushNotifications} onChange={(v) => updateSetting('pushNotifications', v)} label="Push Notifications" description="Desktop and mobile push alerts" />
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Notification Types" description="Select which notifications you want to receive">
+        <div className="space-y-1">
+          <Toggle enabled={settings.quizReminders} onChange={(v) => updateSetting('quizReminders', v)} label="Quiz Reminders" description="Upcoming quizzes and assignments" />
+          <Toggle enabled={settings.teacherMessages} onChange={(v) => updateSetting('teacherMessages', v)} label="Teacher Messages" description="Messages from your teachers" />
+          <Toggle enabled={settings.engagementAlerts} onChange={(v) => updateSetting('engagementAlerts', v)} label="Engagement Alerts" description="Alerts about your study patterns" />
+          <Toggle enabled={settings.studyReminders} onChange={(v) => updateSetting('studyReminders', v)} label="Study Reminders" description="Daily study session reminders" />
+          <Toggle enabled={settings.streakReminders} onChange={(v) => updateSetting('streakReminders', v)} label="Streak Reminders" description="Maintain your study streak" />
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Quiet Hours" description="Set times when you don't want to be disturbed">
+        <div className="space-y-5">
+          <Toggle enabled={settings.quietHoursEnabled} onChange={(v) => updateSetting('quietHoursEnabled', v)} label="Enable Quiet Hours" />
+          {settings.quietHoursEnabled && (
+            <div className="grid grid-cols-2 gap-4 pl-4 border-l-4 border-blue-200">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Start Time</label>
+                <input
+                  type="time"
+                  value={settings.quietHoursStart}
+                  onChange={(e) => updateSetting('quietHoursStart', e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">End Time</label>
+                <input
+                  type="time"
+                  value={settings.quietHoursEnd}
+                  onChange={(e) => updateSetting('quietHoursEnd', e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Sound & Email Digest">
+        <div className="space-y-5">
+          <Toggle enabled={settings.notificationSound} onChange={(v) => updateSetting('notificationSound', v)} label="Notification Sounds" description="Play sound when notifications arrive" />
+          <SelectField label="Email Digest Frequency" value={settings.emailDigest} onChange={(e) => updateSetting('emailDigest', e.target.value)}>
+            <option value="realtime">Real-time (immediately)</option>
+            <option value="daily">Daily Digest</option>
+            <option value="weekly">Weekly Digest</option>
+            <option value="never">Never</option>
+          </SelectField>
+        </div>
+      </SettingCard>
+    </div>
+  );
+
+  const renderStudySection = () => (
+    <div>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Study Preferences</h2>
+      
+      <SettingCard title="Learning Style" description="Choose your preferred learning method">
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { value: 'visual', label: 'Visual', desc: 'Pictures & diagrams' },
+            { value: 'auditory', label: 'Auditory', desc: 'Listening & speaking' },
+            { value: 'kinesthetic', label: 'Kinesthetic', desc: 'Hands-on practice' },
+            { value: 'reading', label: 'Reading/Writing', desc: 'Text-based learning' }
+          ].map(style => (
+            <button
+              key={style.value}
+              onClick={() => updateSetting('learningStyle', style.value)}
+              className={`px-4 py-4 rounded-lg border-2 transition-all text-left ${
+                settings.learningStyle === style.value
+                  ? 'border-blue-500 bg-blue-50 shadow-sm'
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <div className={`font-semibold ${settings.learningStyle === style.value ? 'text-blue-700' : 'text-gray-800'}`}>
+                {style.label}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">{style.desc}</div>
+            </button>
+          ))}
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Study Goals" description="Set your daily and weekly study targets">
+        <div className="space-y-6">
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-semibold text-gray-700">Daily Study Goal</label>
+              <span className="text-lg font-bold text-blue-600">{settings.dailyStudyGoal} min</span>
+            </div>
+            <input
+              type="range"
+              min="15"
+              max="180"
+              step="15"
+              value={settings.dailyStudyGoal}
+              onChange={(e) => updateSetting('dailyStudyGoal', parseInt(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>15 min</span>
+              <span>180 min</span>
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-semibold text-gray-700">Weekly Engagement</label>
+              <span className="text-lg font-bold text-blue-600">{settings.weeklyEngagement} min</span>
+            </div>
+            <input
+              type="range"
+              min="60"
+              max="1200"
+              step="60"
+              value={settings.weeklyEngagement}
+              onChange={(e) => updateSetting('weeklyEngagement', parseInt(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>1 hr</span>
+              <span>20 hrs</span>
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-semibold text-gray-700">Focus Session Duration</label>
+              <span className="text-lg font-bold text-blue-600">{settings.focusSessionDuration} min</span>
+            </div>
+            <input
+              type="range"
+              min="5"
+              max="60"
+              step="5"
+              value={settings.focusSessionDuration}
+              onChange={(e) => updateSetting('focusSessionDuration', parseInt(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>5 min</span>
+              <span>60 min</span>
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-semibold text-gray-700">Break Frequency</label>
+              <span className="text-lg font-bold text-blue-600">{settings.breakFrequency} min</span>
+            </div>
+            <input
+              type="range"
+              min="5"
+              max="30"
+              step="5"
+              value={settings.breakFrequency}
+              onChange={(e) => updateSetting('breakFrequency', parseInt(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>5 min</span>
+              <span>30 min</span>
+            </div>
+          </div>
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Session Preferences" description="Customize your study session experience">
+        <div className="space-y-5">
+          <SelectField label="Default Session Length" value={settings.defaultSessionLength} onChange={(e) => updateSetting('defaultSessionLength', parseInt(e.target.value))}>
+            <option value="15">15 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="60">60 minutes</option>
+          </SelectField>
+          <Toggle enabled={settings.autoStartNext} onChange={(v) => updateSetting('autoStartNext', v)} label="Auto-start Next Session" description="Automatically begin the next session" />
+          <SelectField label="Background Music" value={settings.backgroundMusic} onChange={(e) => updateSetting('backgroundMusic', e.target.value)}>
+            <option value="none">None (Silence)</option>
+            <option value="lofi">Lo-fi Hip Hop</option>
+            <option value="classical">Classical Music</option>
+            <option value="nature">Nature Sounds</option>
+            <option value="ambient">Ambient Sounds</option>
+          </SelectField>
+          <Toggle enabled={settings.aiRecommendations} onChange={(v) => updateSetting('aiRecommendations', v)} label="AI Study Recommendations" description="Get personalized study suggestions" />
+        </div>
+      </SettingCard>
+    </div>
+  );
+
+  const renderAppearanceSection = () => (
+    <div>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Appearance</h2>
+      
+      <SettingCard title="Theme Selection" description="Choose your preferred color scheme">
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={() => updateSetting('theme', 'light')}
+            className={`px-6 py-8 rounded-xl border-2 transition-all ${
+              settings.theme === 'light'
+                ? 'border-blue-500 bg-blue-50 shadow-md'
+                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <Sun className={`mx-auto mb-3 ${settings.theme === 'light' ? 'text-blue-600' : 'text-yellow-500'}`} size={40} />
+            <span className="block font-bold text-gray-800">Light Mode</span>
+            <span className="block text-sm text-gray-500 mt-1">Easy on the eyes</span>
+          </button>
+          <button
+            onClick={() => updateSetting('theme', 'dark')}
+            className={`px-6 py-8 rounded-xl border-2 transition-all ${
+              settings.theme === 'dark'
+                ? 'border-blue-500 bg-blue-50 shadow-md'
+                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <Moon className={`mx-auto mb-3 ${settings.theme === 'dark' ? 'text-blue-600' : 'text-indigo-500'}`} size={40} />
+            <span className="block font-bold text-gray-800">Dark Mode</span>
+            <span className="block text-sm text-gray-500 mt-1">Reduce eye strain</span>
+          </button>
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Display Settings" description="Adjust how content is displayed">
+        <div className="space-y-5">
+          <SelectField label="Font Size" value={settings.fontSize} onChange={(e) => updateSetting('fontSize', e.target.value)}>
+            <option value="small">Small (12px)</option>
+            <option value="medium">Medium (14px)</option>
+            <option value="large">Large (16px)</option>
+            <option value="xlarge">Extra Large (18px)</option>
+          </SelectField>
+          <Toggle enabled={settings.compactView} onChange={(v) => updateSetting('compactView', v)} label="Compact View" description="Show more content in less space" />
+          <Toggle enabled={settings.animations} onChange={(v) => updateSetting('animations', v)} label="Animations Enabled" description="Smooth transitions and effects" />
+          <Toggle enabled={settings.reduceMotion} onChange={(v) => updateSetting('reduceMotion', v)} label="Reduce Motion" description="Minimize animations for accessibility" />
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Language & Region" description="Customize regional preferences">
+        <div className="space-y-5">
+          <SelectField label="Date Format" value={settings.dateFormat} onChange={(e) => updateSetting('dateFormat', e.target.value)}>
+            <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
+            <option value="DD/MM/YYYY">DD/MM/YYYY (UK)</option>
+            <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
+          </SelectField>
+          <SelectField label="First Day of Week" value={settings.firstDayOfWeek} onChange={(e) => updateSetting('firstDayOfWeek', e.target.value)}>
+            <option value="sunday">Sunday</option>
+            <option value="monday">Monday</option>
+          </SelectField>
+        </div>
+      </SettingCard>
+    </div>
+  );
+
+  const renderCameraSection = () => (
+    <div>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Camera & Audio</h2>
+      
+      <SettingCard title="Camera Settings" description="Configure your camera preferences">
+        <div className="space-y-5">
+          <SelectField label="Camera Device" icon={Camera} value={settings.selectedCamera} onChange={(e) => updateSetting('selectedCamera', e.target.value)}>
+            <option value="default">Default Camera</option>
+            <option value="camera1">Front Camera</option>
+            <option value="camera2">Back Camera</option>
+            <option value="camera3">External Webcam</option>
+          </SelectField>
+          <SelectField label="Video Quality" value={settings.videoQuality} onChange={(e) => updateSetting('videoQuality', e.target.value)}>
+            <option value="low">Low (360p) - Save bandwidth</option>
+            <option value="medium">Medium (480p) - Balanced</option>
+            <option value="hd">HD (720p) - High quality</option>
+            <option value="fullhd">Full HD (1080p) - Best quality</option>
+          </SelectField>
+          <Toggle enabled={settings.autoEnableCamera} onChange={(v) => updateSetting('autoEnableCamera', v)} label="Auto-enable Camera on Join" description="Turn on camera when joining sessions" />
+          <Toggle enabled={settings.blurBackground} onChange={(v) => updateSetting('blurBackground', v)} label="Blur Background" description="Apply background blur effect" />
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Microphone Settings" description="Configure your audio input">
+        <div className="space-y-5">
+          <SelectField label="Microphone Device" icon={Mic} value={settings.selectedMicrophone} onChange={(e) => updateSetting('selectedMicrophone', e.target.value)}>
+            <option value="default">Default Microphone</option>
+            <option value="mic1">Built-in Microphone</option>
+            <option value="mic2">External Microphone</option>
+            <option value="mic3">Headset Microphone</option>
+          </SelectField>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-semibold text-gray-700">Microphone Volume</label>
+              <span className="text-lg font-bold text-blue-600">{settings.micVolume}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={settings.micVolume}
+              onChange={(e) => updateSetting('micVolume', parseInt(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>0%</span>
+              <span>100%</span>
+            </div>
+          </div>
+          <Toggle enabled={settings.noiseCancellation} onChange={(v) => updateSetting('noiseCancellation', v)} label="Noise Cancellation" description="Reduce background noise" />
+          <Toggle enabled={settings.autoEnableMic} onChange={(v) => updateSetting('autoEnableMic', v)} label="Auto-enable Microphone on Join" description="Turn on mic when joining sessions" />
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Privacy Indicators">
+        <div className="space-y-5">
+          <Toggle enabled={settings.showPrivacyIndicator} onChange={(v) => updateSetting('showPrivacyIndicator', v)} label="Show Active Camera/Mic Indicator" description="Display when camera or mic is active" />
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <p className="font-semibold text-gray-800">Camera & Microphone Permissions</p>
+            </div>
+            <p className="text-sm text-gray-600">
+              Status: <span className="font-semibold text-green-600">Granted</span>
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Your browser has allowed access to camera and microphone</p>
+          </div>
+        </div>
+      </SettingCard>
+    </div>
+  );
+
+  const renderSecuritySection = () => (
+    <div>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Security</h2>
+      
+      <SettingCard title="Login Security" description="Protect your account with additional security">
+        <div className="space-y-5">
+          <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
+            <div className="flex-1">
+              <span className="block font-semibold text-gray-800">Two-Factor Authentication (2FA)</span>
+              <span className="text-sm text-gray-500">Add an extra layer of security to your account</span>
+            </div>
+            <button
+              onClick={() => setShowModal('2fa')}
+              className={`px-5 py-2 rounded-lg transition-colors font-medium ${
+                settings.twoFactorEnabled
+                  ? 'bg-green-100 text-green-700 border-2 border-green-300'
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+              }`}
+            >
+              {settings.twoFactorEnabled ? '✓ Enabled' : 'Enable 2FA'}
+            </button>
+          </div>
+          <SelectField label="Auto-logout after inactivity" value={settings.autoLogout} onChange={(e) => updateSetting('autoLogout', parseInt(e.target.value))}>
+            <option value="15">15 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="60">1 hour</option>
+            <option value="120">2 hours</option>
+            <option value="0">Never</option>
+          </SelectField>
+          <Toggle enabled={settings.requirePasswordForData} onChange={(v) => updateSetting('requirePasswordForData', v)} label="Require Password for Sensitive Data" description="Add password confirmation for critical actions" />
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Active Sessions" description="Manage devices where you're logged in">
+        <div className="space-y-3">
+          <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-200 flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-gray-800">Chrome on Windows</p>
+                <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-full font-medium">Current</span>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">New York, NY • Active now</p>
+            </div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          </div>
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-gray-800">Safari on iPhone</p>
+              <p className="text-sm text-gray-500 mt-1">Boston, MA • 2 hours ago</p>
+            </div>
+            <button className="text-red-600 hover:text-red-700 text-sm font-semibold hover:underline">Sign Out</button>
+          </div>
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-gray-800">Firefox on MacBook</p>
+              <p className="text-sm text-gray-500 mt-1">New York, NY • Yesterday</p>
+            </div>
+            <button className="text-red-600 hover:text-red-700 text-sm font-semibold hover:underline">Sign Out</button>
+          </div>
+          <button
+            onClick={() => setShowModal('signoutAll')}
+            className="w-full px-5 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium flex items-center justify-center gap-2 border border-red-200 mt-4"
+          >
+            <LogOut size={18} />
+            Sign Out All Other Sessions
+          </button>
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Login History" description="Review recent login attempts">
+        <div className="space-y-2">
+          {[
+            { time: '2 hours ago', location: 'New York, NY', device: 'Chrome on Windows', status: 'success' },
+            { time: '1 day ago', location: 'Boston, MA', device: 'Safari on iPhone', status: 'success' },
+            { time: '2 days ago', location: 'New York, NY', device: 'Chrome on Windows', status: 'success' },
+            { time: '3 days ago', location: 'Unknown Location', device: 'Firefox on Linux', status: 'failed' }
+          ].map((login, idx) => (
+            <div key={idx} className={`p-4 rounded-lg flex items-start gap-3 ${login.status === 'failed' ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-gray-200'}`}>
+              <div className={`mt-1 p-1.5 rounded-full ${login.status === 'success' ? 'bg-green-100' : 'bg-red-100'}`}>
+                {login.status === 'success' ? (
+                  <Check size={14} className="text-green-600" />
+                ) : (
+                  <X size={14} className="text-red-600" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-gray-800">{login.device}</p>
+                <p className="text-sm text-gray-600">{login.location}</p>
+                <p className="text-xs text-gray-500 mt-1">{login.time}</p>
+              </div>
+              {login.status === 'failed' && (
+                <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-1 rounded">Failed</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </SettingCard>
+    </div>
+  );
+
+  const renderHelpSection = () => (
+    <div>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Help & Support</h2>
+      
+      <SettingCard title="Search Help Articles">
+        <div className="relative mb-5">
+          <HelpCircle className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <input
+            type="text"
+            placeholder="Search for help articles, FAQs, guides..."
+            className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+          />
+        </div>
+        <div className="space-y-2">
+          {[
+            { title: 'Getting Started Guide', desc: 'Learn the basics' },
+            { title: 'Privacy & Security FAQ', desc: 'Common questions answered' },
+            { title: 'Study Tips & Best Practices', desc: 'Improve your learning' },
+            { title: 'Troubleshooting Common Issues', desc: 'Fix problems quickly' }
+          ].map(article => (
+            <button key={article.title} className="w-full text-left px-4 py-4 bg-white rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-between border border-gray-200 group">
+              <div>
+                <span className="text-gray-800 font-semibold block">{article.title}</span>
+                <span className="text-sm text-gray-500">{article.desc}</span>
+              </div>
+              <ChevronRight size={20} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+            </button>
+          ))}
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Contact Support" description="Send us a message and we'll get back to you soon">
+        <div className="space-y-4">
+          <InputField label="Subject" type="text" placeholder="Brief description of your issue" />
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+            <textarea
+              rows="5"
+              placeholder="Please describe your issue in detail. Include any error messages or steps to reproduce the problem..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none resize-none"
+            />
+          </div>
+          <button className="w-full px-5 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold shadow-sm hover:shadow-md">
+            Send Message
+          </button>
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Live Chat Support">
+        <div className="text-center py-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-full mb-4 border border-green-200">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="font-medium">Support Team Available</span>
+          </div>
+          <p className="text-gray-600 mb-4">Chat with our support team for immediate assistance</p>
+          <button className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all font-semibold shadow-md hover:shadow-lg">
+            Start Live Chat
+          </button>
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Submit Feedback" description="Help us improve by sharing your experience">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">Rate your experience</label>
+            <div className="flex gap-2 justify-center">
+              {[1, 2, 3, 4, 5].map(star => (
+                <button key={star} className="text-4xl text-gray-300 hover:text-yellow-400 transition-colors hover:scale-110">
+                  ★
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Suggestions or Bug Reports</label>
+            <textarea
+              rows="4"
+              placeholder="We'd love to hear your feedback, suggestions, or any bugs you've encountered..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none resize-none"
+            />
+          </div>
+          <button className="w-full px-5 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold shadow-sm hover:shadow-md">
+            Submit Feedback
+          </button>
+        </div>
+      </SettingCard>
+    </div>
+  );
+
+  const renderAboutSection = () => (
+    <div>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">About</h2>
+      
+      <SettingCard title="Application Information">
+        <div className="space-y-4">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg">
+              <SettingsIcon size={40} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-600 mb-1">Version</p>
+              <p className="font-bold text-xl text-gray-800">2.5.1</p>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-600 mb-1">Last Updated</p>
+              <p className="font-bold text-gray-800">Oct 28, 2024</p>
+            </div>
+          </div>
+          <button className="w-full px-5 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 rounded-lg hover:from-blue-100 hover:to-indigo-100 transition-all font-medium border border-blue-200">
+            Check for Updates
+          </button>
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Credits & Attribution">
+        <div className="space-y-3 text-gray-700">
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+            <p className="font-semibold text-gray-800 mb-2">Developed by</p>
+            <p className="text-gray-600">Student Learning Platform Team</p>
+          </div>
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="font-semibold text-gray-800 mb-2">Powered by</p>
+            <p className="text-gray-600">React • TailwindCSS • Lucide Icons</p>
+          </div>
+          <p className="text-sm text-gray-500 text-center pt-4">© 2024 Student Dashboard. All rights reserved.</p>
+        </div>
+      </SettingCard>
+
+      <SettingCard title="Legal & Policies">
+        <div className="space-y-2">
+          {[
+            { title: 'Privacy Policy', desc: 'How we handle your data' },
+            { title: 'Terms of Service', desc: 'Usage terms and conditions' },
+            { title: 'Cookie Policy', desc: 'Cookie usage information' },
+            { title: 'Acceptable Use Policy', desc: 'Community guidelines' }
+          ].map(link => (
+            <button key={link.title} className="w-full text-left px-4 py-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-between border border-gray-200 group">
+              <div>
+                <span className="text-gray-800 font-semibold block">{link.title}</span>
+                <span className="text-sm text-gray-500">{link.desc}</span>
+              </div>
+              <ChevronRight size={20} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+            </button>
+          ))}
+        </div>
+      </SettingCard>
+
+      <SettingCard title="System Information" description="Your device and browser details">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-xs text-gray-600 mb-1">Browser</p>
+            <p className="font-semibold text-gray-800">Chrome 119.0</p>
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-xs text-gray-600 mb-1">Operating System</p>
+            <p className="font-semibold text-gray-800">Windows 11</p>
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-xs text-gray-600 mb-1">Screen Resolution</p>
+            <p className="font-semibold text-gray-800">1920 × 1080</p>
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-xs text-gray-600 mb-1">Language</p>
+            <p className="font-semibold text-gray-800">English (US)</p>
+          </div>
+        </div>
+      </SettingCard>
+    </div>
+  );
+
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'profile': return renderProfileSection();
+      case 'privacy': return renderPrivacySection();
+      case 'notifications': return renderNotificationsSection();
+      case 'study': return renderStudySection();
+      case 'appearance': return renderAppearanceSection();
+      case 'camera': return renderCameraSection();
+      case 'security': return renderSecuritySection();
+      case 'help': return renderHelpSection();
+      case 'about': return renderAboutSection();
+      default: return renderProfileSection();
     }
-  };
-
-  // Specialized notification handlers
-  const handleNotificationSettingChange = (type, field, value) => {
-    handleNestedSettingChange('notifications', 'types', type, {
-      ...settings.notifications.types[type],
-      [field]: value
-    });
-  };
-
-  const handleQuietHoursSettingChange = (field, value) => {
-    handleNestedSettingChange('notifications', 'quietHours', field, value);
-  };
-
-  // Handler for quiet hours day toggle
-  const handleQuietHoursDayToggle = (day) => {
-    // Implementation for quiet hours toggle
-    console.log('Toggling quiet hours for:', day);
-  };
-
-  const [passwordValues, setPasswordValues] = useState({
-    current: '',
-    new: '',
-    confirm: '',
-    showCurrent: false,
-    showNew: false
-  });
-
-  // Password state only (everything else is in settings)
-  const [passwordValues, setPasswordValues] = useState({
-    eyeBreak: {
-      interval: 20, // minutes
-      duration: 20, // seconds
-      enabled: true
-    },
-    posture: {
-      sensitivity: 75,
-      enabled: true
-    },
-    study: {
-      dailyGoal: 8, // hours
-      weeklyGoal: 40, // hours
-      sessionReminder: 30 // minutes
-    },
-    ai: {
-      attentionTracking: true,
-      faceDetection: true,
-      postureAnalysis: true
-    }
-  });
-
-  // Handle section change
-  const handleSectionChange = (section) => {
-    setActiveSection(section);
-  };
-
-  // Handle profile change
-  const handleProfileChange = (field) => (event) => {
-    setProfile(prev => ({
-      ...prev,
-      [field]: event.target.value
-    }));
-  };
-
-  // Handle privacy change
-  const handlePrivacyChange = (field) => (event) => {
-    const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
-    setPrivacy(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  // Handle notification change
-  const handleNotificationChange = (field) => (event) => {
-    const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
-    setNotifications(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  // Handle notification type change
-  const handleNotificationTypeChange = (type, field) => (event) => {
-    const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
-    setNotifications(prev => ({
-      ...prev,
-      types: {
-        ...prev.types,
-        [type]: {
-          ...prev.types[type],
-          [field]: value
-        }
-      }
-    }));
-  };
-
-  // Handle quiet hours change
-  const handleQuietHoursChange = (field) => (event) => {
-    const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
-    setNotifications(prev => ({
-      ...prev,
-      quietHours: {
-        ...prev.quietHours,
-        [field]: value
-      }
-    }));
-  };
-
-  // Handle quiet hours days change
-  const handleQuietHoursDayChange = (day) => (event) => {
-    setNotifications(prev => ({
-      ...prev,
-      quietHours: {
-        ...prev.quietHours,
-        days: {
-          ...prev.quietHours.days,
-          [day]: event.target.checked
-        }
-      }
-    }));
-  };
-
-  // Handle study preferences change
-  const handleStudyPrefChange = (category, setting) => (event) => {
-    const value = event.target.type === 'checkbox' 
-      ? event.target.checked 
-      : (event.target.type === 'number' ? parseFloat(event.target.value) : event.target.value);
-    
-    setStudyPreferences(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [setting]: value
-      }
-    }));
-  };
-
-  // Handle password change
-  const handlePasswordChange = (field) => (event) => {
-    setPasswordValues(prev => ({
-      ...prev,
-      [field]: event.target.value
-    }));
-  };
-
-  // Toggle password visibility
-  const togglePasswordVisibility = (field) => {
-    setPasswordValues(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
-  };
-
-  // Handle dialog open
-  const handleOpenDialog = (dialog) => {
-    setOpenDialog(dialog);
-  };
-
-  // Handle dialog close
-  const handleCloseDialog = () => {
-    setOpenDialog('');
-  };
-
-  // Handle save settings
-  const handleSaveSettings = () => {
-    // Simulate saving settings
-    setSaveStatus('success');
-    setTimeout(() => setSaveStatus(''), 3000);
-  };
-
-  // Handle add parent email
-  const handleAddParentEmail = (email) => {
-    if (email && !profile.parentEmails.includes(email)) {
-      setProfile(prev => ({
-        ...prev,
-        parentEmails: [...prev.parentEmails, email]
-      }));
-    }
-  };
-
-  // Handle remove parent email
-  const handleRemoveParentEmail = (email) => {
-    setProfile(prev => ({
-      ...prev,
-      parentEmails: prev.parentEmails.filter(e => e !== email)
-    }));
-  };
-
-  // Handle avatar change
-  const handleAvatarChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfile(prev => ({
-          ...prev,
-          avatar: e.target.result
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Handle avatar remove
-  const handleAvatarRemove = () => {
-    setProfile(prev => ({
-      ...prev,
-      avatar: null
-    }));
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography 
-          variant="h4" 
-          component="h1" 
-          gutterBottom
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            fontWeight: 700,
-            color: '#2196f3'
-          }}
-        >
-          <SettingsIcon sx={{ fontSize: 32 }} />
-          Settings
-        </Typography>
-        <Typography 
-          variant="subtitle1" 
-          color="text.secondary" 
-          sx={{ 
-            fontSize: '1.1rem',
-            fontWeight: 500,
-          }}
-        >
-          Customize your Study Eyes experience and manage your account
-        </Typography>
-      </Box>
-
-      {saveStatus && (
-        <Alert 
-          severity="success" 
-          sx={{ 
-            mb: 3,
-            background: 'rgba(76, 175, 80, 0.1)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(76, 175, 80, 0.3)',
-            borderRadius: '12px',
-            '& .MuiAlert-icon': {
-              filter: 'drop-shadow(0 0 4px rgba(76, 175, 80, 0.3))',
-            },
-          }}
-        >
-          ✅ Settings saved successfully!
-        </Alert>
-      )}
-      
-      {/* Main Layout: Sidebar + Content */}
-      <Grid container spacing={3}>
-        {/* Left Sidebar */}
-        <Grid item xs={12} md={3}>
-          <Paper 
-            elevation={3} 
-            sx={{ 
-              borderRadius: '16px',
-              overflow: 'hidden',
-              height: '100%'
-            }}
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+        <div className="px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <SettingsIcon className="text-blue-600" size={24} />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-800">Settings</h1>
+          </div>
+          <button
+            className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            <List component="nav" sx={{ p: 1 }}>
-              {SECTIONS.map((section) => (
-                <ListItem 
-                  key={section.id} 
-                  disablePadding
-                  sx={{ mb: 0.5 }}
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div className="flex max-w-7xl mx-auto">
+        {/* Sidebar */}
+        <aside className={`w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-73px)] sticky top-[73px] ${isMobileMenuOpen ? 'block fixed inset-0 z-50 top-[73px]' : 'hidden'} md:block`}>
+          <nav className="p-4 space-y-1">
+            {menuSections.map(section => {
+              const Icon = section.icon;
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => {
+                    setActiveSection(section.id);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                    activeSection === section.id
+                      ? 'bg-blue-600 text-white font-semibold shadow-sm'
+                      : 'bg-white text-gray-700 hover:bg-blue-500 hover:text-white'
+                  }`}
                 >
-                  <ListItemButton
-                    selected={activeSection === section.id}
-                    onClick={() => handleSectionChange(section.id)}
-                    sx={{
-                      borderRadius: '12px',
-                      py: 1.5,
-                      '&.Mui-selected': {
-                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                        color: '#2196f3',
-                        '&:hover': {
-                          backgroundColor: 'rgba(33, 150, 243, 0.15)',
-                        },
-                        '& .MuiListItemIcon-root': {
-                          color: '#2196f3',
-                        },
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 40 }}>
-                      {section.icon}
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary={section.label} 
-                      primaryTypographyProps={{ 
-                        fontWeight: activeSection === section.id ? 600 : 400 
-                      }}
-                    />
-                    {activeSection === section.id && (
-                      <Box 
-                        sx={{ 
-                          width: 4, 
-                          height: 24, 
-                          bgcolor: '#2196f3',
-                          borderRadius: 4,
-                          ml: 1
-                        }} 
-                      />
-                    )}
-                  </ListItemButton>
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-        </Grid>
-        
-        {/* Right Content Area */}
-        <Grid item xs={12} md={9}>
-          <Paper 
-            elevation={3} 
-            sx={{ 
-              p: 4, 
-              borderRadius: '16px',
-              minHeight: 600
-            }}
-          >
-            {/* Profile & Account Section */}
-            {activeSection === 'profile' && (
-              <Box>
-                <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
-                  Profile & Account
-                </Typography>
-                
-                <Grid container spacing={3}>
-                  {/* Personal Information Card */}
-                  <Grid item xs={12}>
-                    <Card elevation={1} sx={{ borderRadius: '12px' }}>
-                      <CardHeader 
-                        title="Personal Information" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <Grid container spacing={3}>
-                          {/* Profile Picture */}
-                          <Grid item xs={12} sm={3} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <Box sx={{ position: 'relative', mb: 2 }}>
-                              <Badge
-                                overlap="circular"
-                                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                                badgeContent={
-                                  <IconButton 
-                                    sx={{ 
-                                      bgcolor: 'primary.main', 
-                                      color: 'white',
-                                      '&:hover': { bgcolor: 'primary.dark' },
-                                      width: 32,
-                                      height: 32,
-                                    }}
-                                  >
-                                    <PhotoCameraIcon sx={{ fontSize: 18 }} />
-                                  </IconButton>
-                                }
-                              >
-                                <Avatar 
-                                  sx={{ 
-                                    width: 120, 
-                                    height: 120,
-                                    border: '4px solid white',
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                    fontSize: 48,
-                                    bgcolor: 'primary.main',
-                                  }}
-                                >
-                                  {profile.fullName.charAt(0).toUpperCase()}
-                                </Avatar>
-                              </Badge>
-                            </Box>
-                            <Button 
-                              variant="outlined" 
-                              size="small" 
-                              startIcon={<AddIcon />}
-                              sx={{ mb: 1 }}
-                            >
-                              Upload Photo
-                            </Button>
-                            <Typography variant="caption" color="text.secondary">
-                              JPG, PNG (max 5MB)
-                            </Typography>
-                          </Grid>
-                          
-                          {/* Personal Details */}
-                          <Grid item xs={12} sm={9}>
-                            <Grid container spacing={2}>
-                              <Grid item xs={12} sm={6}>
-                                <TextField
-                                  fullWidth
-                                  label="Full Name"
-                                  value={profile.name}
-                                  onChange={handleProfileChange('name')}
-                                  variant="outlined"
-                                />
-                              </Grid>
-                              <Grid item xs={12} sm={6}>
-                                <TextField
-                                  fullWidth
-                                  label="Email Address"
-                                  value={profile.email}
-                                  onChange={handleProfileChange('email')}
-                                  variant="outlined"
-                                  InputProps={{
-                                    endAdornment: (
-                                      <InputAdornment position="end">
-                                        <Chip 
-                                          label="Verified" 
-                                          size="small" 
-                                          color="success" 
-                                          icon={<CheckCircleIcon />} 
-                                        />
-                                      </InputAdornment>
-                                    ),
-                                  }}
-                                />
-                              </Grid>
-                              <Grid item xs={12} sm={6}>
-                                <TextField
-                                  fullWidth
-                                  label="Student ID"
-                                  value={profile.studentId}
-                                  variant="outlined"
-                                  InputProps={{
-                                    readOnly: true,
-                                  }}
-                                  sx={{
-                                    "& .MuiInputBase-input.Mui-disabled": {
-                                      WebkitTextFillColor: "#666",
-                                    },
-                                  }}
-                                />
-                              </Grid>
-                              <Grid item xs={12} sm={6}>
-                                <FormControl fullWidth variant="outlined">
-                                  <InputLabel id="grade-label">Grade/Year</InputLabel>
-                                  <Select
-                                    labelId="grade-label"
-                                    value={profile.grade}
-                                    onChange={handleProfileChange('grade')}
-                                    label="Grade/Year"
-                                  >
-                                    {GRADE_OPTIONS.map((grade) => (
-                                      <MenuItem key={grade} value={grade}>
-                                        {grade}
-                                      </MenuItem>
-                                    ))}
-                                  </Select>
-                                </FormControl>
-                              </Grid>
-                              <Grid item xs={12} sm={6}>
-                                <TextField
-                                  fullWidth
-                                  label="Date of Birth"
-                                  type="date"
-                                  value={profile.dob}
-                                  onChange={handleProfileChange('dob')}
-                                  variant="outlined"
-                                  InputLabelProps={{
-                                    shrink: true,
-                                  }}
-                                  helperText="Optional"
-                                />
-                              </Grid>
-                              <Grid item xs={12} sm={6}>
-                                <TextField
-                                  fullWidth
-                                  label="Phone Number"
-                                  value={profile.phone}
-                                  onChange={handleProfileChange('phone')}
-                                  variant="outlined"
-                                  placeholder="+XX XXX-XXX-XXXX"
-                                  helperText="Optional, for alerts"
-                                />
-                              </Grid>
-                            </Grid>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  
-                  {/* Account Settings Card */}
-                  <Grid item xs={12}>
-                    <Card elevation={1} sx={{ borderRadius: '12px' }}>
-                      <CardHeader 
-                        title="Account Settings" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <Grid container spacing={3}>
-                          <Grid item xs={12} sm={6}>
-                            <TextField
-                              fullWidth
-                              label="Username"
-                              value={profile.username}
-                              onChange={handleProfileChange('username')}
-                              variant="outlined"
-                              helperText="Used for login"
-                            />
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <Box sx={{ height: '100%', display: 'flex', alignItems: 'center' }}>
-                              <Button
-                                variant="outlined"
-                                startIcon={<LockIcon />}
-                                onClick={() => handleOpenDialog('changePassword')}
-                                sx={{ mt: -3 }}
-                              >
-                                Change Password
-                              </Button>
-                            </Box>
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth variant="outlined">
-                              <InputLabel id="language-label">Preferred Language</InputLabel>
-                              <Select
-                                labelId="language-label"
-                                value={profile.language}
-                                onChange={handleProfileChange('language')}
-                                label="Preferred Language"
-                              >
-                                {LANGUAGE_OPTIONS.map((language) => (
-                                  <MenuItem key={language} value={language}>
-                                    {language}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth variant="outlined">
-                              <InputLabel id="timezone-label">Time Zone</InputLabel>
-                              <Select
-                                labelId="timezone-label"
-                                value={profile.timezone}
-                                onChange={handleProfileChange('timezone')}
-                                label="Time Zone"
-                              >
-                                {TIMEZONE_OPTIONS.map((timezone) => (
-                                  <MenuItem key={timezone} value={timezone}>
-                                    {timezone}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                              <FormHelperText>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                                  <AccessTimeIcon fontSize="small" color="action" />
-                                  <Typography variant="caption" color="text.secondary">
-                                    Auto-detected based on your location
-                                  </Typography>
-                                </Box>
-                              </FormHelperText>
-                            </FormControl>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  
-                  {/* Connected Accounts Card */}
-                  <Grid item xs={12}>
-                    <Card elevation={1} sx={{ borderRadius: '12px' }}>
-                      <CardHeader 
-                        title="Connected Accounts" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <List disablePadding>
-                          {/* Google Account */}
-                          <ListItem
-                            secondaryAction={
-                              CONNECTED_ACCOUNTS[0].connected ? (
-                                <Button 
-                                  variant="outlined" 
-                                  color="error" 
-                                  size="small"
-                                  startIcon={<LinkOffIcon />}
-                                >
-                                  Disconnect
-                                </Button>
-                              ) : (
-                                <Button 
-                                  variant="outlined" 
-                                  color="primary" 
-                                  size="small"
-                                  startIcon={<LinkIcon />}
-                                >
-                                  Connect
-                                </Button>
-                              )
-                            }
-                          >
-                            <ListItemIcon>
-                              <Avatar sx={{ bgcolor: '#DB4437' }}>G</Avatar>
-                            </ListItemIcon>
-                            <ListItemText 
-                              primary="Google Account" 
-                              secondary={
-                                CONNECTED_ACCOUNTS[0].connected ? 
-                                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                    {CONNECTED_ACCOUNTS[0].email}
-                                    <Chip 
-                                      label="Connected" 
-                                      size="small" 
-                                      color="success" 
-                                      sx={{ height: 20, fontSize: '0.7rem' }} 
-                                    />
-                                  </Box> : 
-                                  "Not connected"
-                              }
-                            />
-                          </ListItem>
-                          <Divider component="li" />
-                          
-                          {/* Microsoft Account */}
-                          <ListItem
-                            secondaryAction={
-                              CONNECTED_ACCOUNTS[1].connected ? (
-                                <Button 
-                                  variant="outlined" 
-                                  color="error" 
-                                  size="small"
-                                  startIcon={<LinkOffIcon />}
-                                >
-                                  Disconnect
-                                </Button>
-                              ) : (
-                                <Button 
-                                  variant="outlined" 
-                                  color="primary" 
-                                  size="small"
-                                  startIcon={<LinkIcon />}
-                                >
-                                  Connect
-                                </Button>
-                              )
-                            }
-                          >
-                            <ListItemIcon>
-                              <Avatar sx={{ bgcolor: '#0078D4' }}>M</Avatar>
-                            </ListItemIcon>
-                            <ListItemText 
-                              primary="Microsoft Account" 
-                              secondary={
-                                CONNECTED_ACCOUNTS[1].connected ? 
-                                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                    {CONNECTED_ACCOUNTS[1].email}
-                                    <Chip 
-                                      label="Connected" 
-                                      size="small" 
-                                      color="success" 
-                                      sx={{ height: 20, fontSize: '0.7rem' }} 
-                                    />
-                                  </Box> : 
-                                  "Not connected"
-                              }
-                            />
-                          </ListItem>
-                          <Divider component="li" />
-                          
-                          {/* Parent/Guardian Emails */}
-                          <ListItem
-                            secondaryAction={
-                              <Button 
-                                variant="outlined" 
-                                color="primary" 
-                                size="small"
-                                startIcon={<AddIcon />}
-                                onClick={() => handleOpenDialog('addParentEmail')}
-                              >
-                                Add Email
-                              </Button>
-                            }
-                          >
-                            <ListItemIcon>
-                              <Avatar sx={{ bgcolor: '#4CAF50' }}>P</Avatar>
-                            </ListItemIcon>
-                            <ListItemText 
-                              primary="Parent/Guardian Emails" 
-                              secondary="Add emails to share progress reports"
-                            />
-                          </ListItem>
-                          
-                          {PARENT_EMAILS.map((parent) => (
-                            <ListItem key={parent.id} sx={{ pl: 9 }}>
-                              <ListItemText 
-                                primary={
-                                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                    {parent.email}
-                                    {parent.verified && (
-                                      <Chip 
-                                        label="Verified" 
-                                        size="small" 
-                                        color="success" 
-                                        sx={{ height: 20, fontSize: '0.7rem' }} 
-                                      />
-                                    )}
-                                  </Box>
-                                }
-                              />
-                              <IconButton edge="end" aria-label="delete" color="error">
-                                <DeleteIcon />
-                              </IconButton>
-                            </ListItem>
-                          ))}
-                        </List>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  
-                  {/* Danger Zone Card */}
-                  <Grid item xs={12}>
-                    <Card 
-                      elevation={1} 
-                      sx={{ 
-                        borderRadius: '12px',
-                        border: '1px solid rgba(244, 67, 54, 0.5)',
-                      }}
-                    >
-                      <CardHeader 
-                        title={
-                          <Typography variant="h6" color="error">
-                            Danger Zone
-                          </Typography>
-                        }
-                      />
-                      <Divider />
-                      <CardContent>
-                        <Grid container spacing={2}>
-                          <Grid item xs={12} sm={6}>
-                            <Box sx={{ p: 2, border: '1px solid rgba(0, 0, 0, 0.12)', borderRadius: '8px' }}>
-                              <Typography variant="subtitle1" gutterBottom>
-                                Deactivate Account
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" paragraph>
-                                Temporarily disable your account. You can reactivate it anytime.
-                              </Typography>
-                              <Button 
-                                variant="outlined" 
-                                color="warning"
-                                onClick={() => handleOpenDialog('deactivateAccount')}
-                              >
-                                Deactivate Account
-                              </Button>
-                            </Box>
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <Box sx={{ p: 2, border: '1px solid rgba(244, 67, 54, 0.5)', borderRadius: '8px', bgcolor: 'rgba(244, 67, 54, 0.03)' }}>
-                              <Typography variant="subtitle1" gutterBottom>
-                                Delete Account Permanently
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" paragraph>
-                                This action cannot be undone. All your data will be permanently deleted.
-                              </Typography>
-                              <Button 
-                                variant="outlined" 
-                                color="error"
-                                onClick={() => handleOpenDialog('deleteAccount')}
-                              >
-                                Delete Account
-                              </Button>
-                            </Box>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
-                
-                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                  <Button variant="outlined" color="inherit">
-                    Cancel
-                  </Button>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    startIcon={<SaveIcon />}
-                    onClick={handleSaveSettings}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              </Box>
-            )}
-            
-            {/* Privacy & Data Section */}
-            {activeSection === 'privacy' && (
-              <Box>
-                <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
-                  Privacy & Data
-                </Typography>
-                
-                <Grid container spacing={3}>
-                  {/* Data Collection Card */}
-                  <Grid item xs={12}>
-                    <Card elevation={1} sx={{ borderRadius: '12px' }}>
-                      <CardHeader 
-                        title="Data Collection" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <Box sx={{ mb: 3 }}>
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                checked={privacy.masterToggle} 
-                                onChange={handlePrivacyChange('masterToggle')}
-                                color="primary"
-                              />
-                            }
-                            label={
-                              <Typography variant="subtitle1" fontWeight={500}>
-                                Enable engagement monitoring
-                              </Typography>
-                            }
-                          />
-                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, ml: 4 }}>
-                            Allow Study Eyes to monitor your engagement and provide insights
-                          </Typography>
-                          
-                          {!privacy.masterToggle && (
-                            <Alert severity="warning" sx={{ mt: 2 }}>
-                              Turning this off will limit many features of Study Eyes, including personalized insights, focus tracking, and engagement analytics.
-                            </Alert>
-                          )}
-                        </Box>
-                        
-                        <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, mb: 1 }}>
-                          What We Collect
-                        </Typography>
-                        
-                        <FormGroup sx={{ ml: 2 }}>
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                checked={privacy.videoAnalysis} 
-                                onChange={handlePrivacyChange('videoAnalysis')}
-                                color="primary"
-                                disabled={!privacy.masterToggle}
-                              />
-                            }
-                            label={
-                              <Box>
-                                <Typography variant="body2">
-                                  Video Analysis
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Allow facial expression and posture analysis
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                          
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                checked={privacy.audioAnalysis} 
-                                onChange={handlePrivacyChange('audioAnalysis')}
-                                color="primary"
-                                disabled={!privacy.masterToggle}
-                              />
-                            }
-                            label={
-                              <Box>
-                                <Typography variant="body2">
-                                  Audio Analysis
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Allow voice and speech pattern analysis
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                          
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                checked={privacy.physiologicalSignals} 
-                                onChange={handlePrivacyChange('physiologicalSignals')}
-                                color="primary"
-                                disabled={!privacy.masterToggle}
-                              />
-                            }
-                            label={
-                              <Box>
-                                <Typography variant="body2">
-                                  Physiological Signals
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Allow heart rate and fatigue estimation (rPPG from video)
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                          
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                checked={privacy.screenActivity} 
-                                onChange={handlePrivacyChange('screenActivity')}
-                                color="primary"
-                                disabled={!privacy.masterToggle}
-                              />
-                            }
-                            label={
-                              <Box>
-                                <Typography variant="body2">
-                                  Screen Activity
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Track focus on study materials during online sessions
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                        </FormGroup>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  
-                  {/* Data Retention Card */}
-                  <Grid item xs={12} md={6}>
-                    <Card elevation={1} sx={{ borderRadius: '12px', height: '100%' }}>
-                      <CardHeader 
-                        title="Data Retention" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <FormControl fullWidth variant="outlined" sx={{ mb: 3 }}>
-                          <InputLabel id="data-retention-label">Data storage duration</InputLabel>
-                          <Select
-                            labelId="data-retention-label"
-                            value={privacy.dataRetention}
-                            onChange={handlePrivacyChange('dataRetention')}
-                            label="Data storage duration"
-                          >
-                            {DATA_RETENTION_OPTIONS.map((option) => (
-                              <MenuItem key={option} value={option}>
-                                {option}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                          <FormHelperText>
-                            How long we keep your engagement data
-                          </FormHelperText>
-                        </FormControl>
-                        
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <Button 
-                            variant="outlined" 
-                            color="primary" 
-                            startIcon={<CloudDownloadIcon />}
-                            fullWidth
-                          >
-                            Download My Data
-                          </Button>
-                          <Button 
-                            variant="outlined" 
-                            color="error" 
-                            startIcon={<DeleteForeverIcon />}
-                            fullWidth
-                          >
-                            Delete All My Data
-                          </Button>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  
-                  {/* Privacy Settings Card */}
-                  <Grid item xs={12} md={6}>
-                    <Card elevation={1} sx={{ borderRadius: '12px', height: '100%' }}>
-                      <CardHeader 
-                        title="Privacy Settings" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <FormGroup>
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                checked={privacy.anonymousBenchmarking} 
-                                onChange={handlePrivacyChange('anonymousBenchmarking')}
-                                color="primary"
-                              />
-                            }
-                            label={
-                              <Box>
-                                <Typography variant="body2">
-                                  Anonymous Benchmarking
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Allow my anonymized data to be used for class/grade comparisons
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                          
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                checked={privacy.shareWithTeachers} 
-                                onChange={handlePrivacyChange('shareWithTeachers')}
-                                color="primary"
-                              />
-                            }
-                            label={
-                              <Box>
-                                <Typography variant="body2">
-                                  Share with Teachers
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Allow teachers to see my detailed engagement data
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                          
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                checked={privacy.shareWithParents} 
-                                onChange={handlePrivacyChange('shareWithParents')}
-                                color="primary"
-                              />
-                            }
-                            label={
-                              <Box>
-                                <Typography variant="body2">
-                                  Share with Parents
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Allow parents to see my progress reports
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                          
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                checked={privacy.participateInResearch} 
-                                onChange={handlePrivacyChange('participateInResearch')}
-                                color="primary"
-                              />
-                            }
-                            label={
-                              <Box>
-                                <Typography variant="body2">
-                                  Participate in Research
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Allow anonymized data to improve Study Eyes algorithms
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                        </FormGroup>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  
-                  {/* Session Recording Card */}
-                  <Grid item xs={12}>
-                    <Card elevation={1} sx={{ borderRadius: '12px' }}>
-                      <CardHeader 
-                        title="Session Recording" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <FormControlLabel
-                          control={
-                            <Switch 
-                              checked={privacy.saveSessionRecordings} 
-                              onChange={handlePrivacyChange('saveSessionRecordings')}
-                              color="primary"
-                            />
-                          }
-                          label={
-                            <Box>
-                              <Typography variant="body2">
-                                Save Session Recordings
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                Store recordings of your study sessions
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                        
-                        {privacy.saveSessionRecordings && (
-                          <Box sx={{ mt: 2, ml: 4 }}>
-                            <FormControl variant="outlined" sx={{ minWidth: 200 }}>
-                              <InputLabel id="auto-delete-label">Auto-delete recordings after</InputLabel>
-                              <Select
-                                labelId="auto-delete-label"
-                                value={privacy.autoDeleteRecordings}
-                                onChange={handlePrivacyChange('autoDeleteRecordings')}
-                                label="Auto-delete recordings after"
-                              >
-                                {AUTO_DELETE_OPTIONS.map((option) => (
-                                  <MenuItem key={option} value={option}>
-                                    {option}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                            
-                            <Alert severity="info" sx={{ mt: 2 }}>
-                              Recordings are stored locally and are only accessible to you.
-                            </Alert>
-                          </Box>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
-                
-                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                  <Button variant="outlined" color="inherit">
-                    Cancel
-                  </Button>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    startIcon={<SaveIcon />}
-                    onClick={handleSaveSettings}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              </Box>
-            )}
-            
-            {/* Notifications Section */}
-            {activeSection === 'notifications' && (
-              <Box>
-                <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
-                  Notifications
-                </Typography>
-                
-                <Grid container spacing={3}>
-                  {/* Notification Preferences Card */}
-                  <Grid item xs={12}>
-                    <Card elevation={1} sx={{ borderRadius: '12px' }}>
-                      <CardHeader 
-                        title="Notification Preferences" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        {/* Delivery Methods */}
-                        <Typography variant="subtitle2" gutterBottom>
-                          Delivery Methods
-                        </Typography>
-                        <Grid container spacing={2} sx={{ mb: 3 }}>
-                          <Grid item xs={12} sm={6} md={3}>
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  checked={notifications.inApp} 
-                                  onChange={handleNotificationChange('inApp')}
-                                  color="primary"
-                                />
-                              }
-                              label="In-App Notifications"
-                            />
-                          </Grid>
-                          <Grid item xs={12} sm={6} md={3}>
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  checked={notifications.email} 
-                                  onChange={handleNotificationChange('email')}
-                                  color="primary"
-                                />
-                              }
-                              label="Email Notifications"
-                            />
-                          </Grid>
-                          <Grid item xs={12} sm={6} md={3}>
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  checked={notifications.sms} 
-                                  onChange={handleNotificationChange('sms')}
-                                  color="primary"
-                                />
-                              }
-                              label="SMS Notifications"
-                            />
-                          </Grid>
-                          <Grid item xs={12} sm={6} md={3}>
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  checked={notifications.push} 
-                                  onChange={handleNotificationChange('push')}
-                                  color="primary"
-                                />
-                              }
-                              label="Push Notifications"
-                            />
-                          </Grid>
-                        </Grid>
-                        
-                        {/* Notification Types */}
-                        <Typography variant="subtitle2" gutterBottom>
-                          Notification Types
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-                        
-                        {/* Quiz Notifications */}
-                        <Grid container spacing={2} sx={{ mb: 2 }}>
-                          <Grid item xs={12} sm={6}>
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  checked={notifications.types.quiz.enabled} 
-                                  onChange={handleNotificationTypeChange('quiz', 'enabled')}
-                                  color="primary"
-                                />
-                              }
-                              label={
-                                <Typography variant="body1" fontWeight={500}>
-                                  Quiz Notifications
-                                </Typography>
-                              }
-                            />
-                            <Box sx={{ ml: 4, mt: 0.5 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                • New quiz available
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                • Quiz reminder before deadline
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                • Quiz results posted
-                              </Typography>
-                            </Box>
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <FormControl 
-                              variant="outlined" 
-                              size="small" 
-                              sx={{ minWidth: 200 }}
-                              disabled={!notifications.types.quiz.enabled}
-                            >
-                              <InputLabel id="quiz-frequency-label">Frequency</InputLabel>
-                              <Select
-                                labelId="quiz-frequency-label"
-                                value={notifications.types.quiz.frequency}
-                                onChange={handleNotificationTypeChange('quiz', 'frequency')}
-                                label="Frequency"
-                              >
-                                {NOTIFICATION_FREQUENCY.quiz.map((option) => (
-                                  <MenuItem key={option} value={option}>
-                                    {option}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                          </Grid>
-                        </Grid>
-                        <Divider sx={{ my: 2 }} />
-                        
-                        {/* Engagement Alerts */}
-                        <Grid container spacing={2} sx={{ mb: 2 }}>
-                          <Grid item xs={12} sm={6}>
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  checked={notifications.types.engagement.enabled} 
-                                  onChange={handleNotificationTypeChange('engagement', 'enabled')}
-                                  color="primary"
-                                />
-                              }
-                              label={
-                                <Typography variant="body1" fontWeight={500}>
-                                  Engagement Alerts
-                                </Typography>
-                              }
-                            />
-                            <Box sx={{ ml: 4, mt: 0.5 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                • Daily engagement summary
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                • Low focus warnings
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                • Streak achievements
-                              </Typography>
-                            </Box>
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <FormControl 
-                              variant="outlined" 
-                              size="small" 
-                              sx={{ minWidth: 200 }}
-                              disabled={!notifications.types.engagement.enabled}
-                            >
-                              <InputLabel id="engagement-frequency-label">Frequency</InputLabel>
-                              <Select
-                                labelId="engagement-frequency-label"
-                                value={notifications.types.engagement.frequency}
-                                onChange={handleNotificationTypeChange('engagement', 'frequency')}
-                                label="Frequency"
-                              >
-                                {NOTIFICATION_FREQUENCY.engagement.map((option) => (
-                                  <MenuItem key={option} value={option}>
-                                    {option}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                          </Grid>
-                        </Grid>
-                        <Divider sx={{ my: 2 }} />
-                        
-                        {/* Teacher Messages */}
-                        <Grid container spacing={2} sx={{ mb: 2 }}>
-                          <Grid item xs={12} sm={6}>
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  checked={notifications.types.teacher.enabled} 
-                                  onChange={handleNotificationTypeChange('teacher', 'enabled')}
-                                  color="primary"
-                                />
-                              }
-                              label={
-                                <Typography variant="body1" fontWeight={500}>
-                                  Teacher Messages
-                                </Typography>
-                              }
-                            />
-                            <Box sx={{ ml: 4, mt: 0.5 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                • Direct messages from teachers
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                • Class announcements
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                • Material shared
-                              </Typography>
-                            </Box>
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <FormControl 
-                              variant="outlined" 
-                              size="small" 
-                              sx={{ minWidth: 200 }}
-                              disabled={!notifications.types.teacher.enabled}
-                            >
-                              <InputLabel id="teacher-frequency-label">Frequency</InputLabel>
-                              <Select
-                                labelId="teacher-frequency-label"
-                                value={notifications.types.teacher.frequency}
-                                onChange={handleNotificationTypeChange('teacher', 'frequency')}
-                                label="Frequency"
-                              >
-                                {NOTIFICATION_FREQUENCY.teacher.map((option) => (
-                                  <MenuItem key={option} value={option}>
-                                    {option}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                          </Grid>
-                        </Grid>
-                        <Divider sx={{ my: 2 }} />
-                        
-                        {/* Achievement Notifications */}
-                        <Grid container spacing={2} sx={{ mb: 2 }}>
-                          <Grid item xs={12} sm={6}>
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  checked={notifications.types.achievement.enabled} 
-                                  onChange={handleNotificationTypeChange('achievement', 'enabled')}
-                                  color="primary"
-                                />
-                              }
-                              label={
-                                <Typography variant="body1" fontWeight={500}>
-                                  Achievement Notifications
-                                </Typography>
-                              }
-                            />
-                            <Box sx={{ ml: 4, mt: 0.5 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                • Badges and milestones
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                • Goal completions
-                              </Typography>
-                            </Box>
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <FormControl 
-                              variant="outlined" 
-                              size="small" 
-                              sx={{ minWidth: 200 }}
-                              disabled={!notifications.types.achievement.enabled}
-                            >
-                              <InputLabel id="achievement-frequency-label">Frequency</InputLabel>
-                              <Select
-                                labelId="achievement-frequency-label"
-                                value={notifications.types.achievement.frequency}
-                                onChange={handleNotificationTypeChange('achievement', 'frequency')}
-                                label="Frequency"
-                              >
-                                {NOTIFICATION_FREQUENCY.achievement.map((option) => (
-                                  <MenuItem key={option} value={option}>
-                                    {option}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                          </Grid>
-                        </Grid>
-                        <Divider sx={{ my: 2 }} />
-                        
-                        {/* Schedule Reminders */}
-                        <Grid container spacing={2} sx={{ mb: 2 }}>
-                          <Grid item xs={12} sm={6}>
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  checked={notifications.types.schedule.enabled} 
-                                  onChange={handleNotificationTypeChange('schedule', 'enabled')}
-                                  color="primary"
-                                />
-                              }
-                              label={
-                                <Typography variant="body1" fontWeight={500}>
-                                  Schedule Reminders
-                                </Typography>
-                              }
-                            />
-                            <Box sx={{ ml: 4, mt: 0.5 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                • Class starting in 10 minutes
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                • Upcoming assignments
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                • Schedule changes
-                              </Typography>
-                            </Box>
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <FormControl 
-                              variant="outlined" 
-                              size="small" 
-                              sx={{ minWidth: 200 }}
-                              disabled={!notifications.types.schedule.enabled}
-                            >
-                              <InputLabel id="schedule-frequency-label">Frequency</InputLabel>
-                              <Select
-                                labelId="schedule-frequency-label"
-                                value={notifications.types.schedule.frequency}
-                                onChange={handleNotificationTypeChange('schedule', 'frequency')}
-                                label="Frequency"
-                              >
-                                {NOTIFICATION_FREQUENCY.schedule.map((option) => (
-                                  <MenuItem key={option} value={option}>
-                                    {option}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                          </Grid>
-                        </Grid>
-                        <Divider sx={{ my: 2 }} />
-                        
-                        {/* System Updates */}
-                        <Grid container spacing={2}>
-                          <Grid item xs={12} sm={6}>
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  checked={notifications.types.system.enabled} 
-                                  onChange={handleNotificationTypeChange('system', 'enabled')}
-                                  color="primary"
-                                />
-                              }
-                              label={
-                                <Typography variant="body1" fontWeight={500}>
-                                  System Updates
-                                </Typography>
-                              }
-                            />
-                            <Box sx={{ ml: 4, mt: 0.5 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                • New features
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                • Maintenance notices
-                              </Typography>
-                            </Box>
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <FormControl 
-                              variant="outlined" 
-                              size="small" 
-                              sx={{ minWidth: 200 }}
-                              disabled={!notifications.types.system.enabled}
-                            >
-                              <InputLabel id="system-frequency-label">Frequency</InputLabel>
-                              <Select
-                                labelId="system-frequency-label"
-                                value={notifications.types.system.frequency}
-                                onChange={handleNotificationTypeChange('system', 'frequency')}
-                                label="Frequency"
-                              >
-                                {NOTIFICATION_FREQUENCY.system.map((option) => (
-                                  <MenuItem key={option} value={option}>
-                                    {option}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  
-                  {/* Quiet Hours Card */}
-                  <Grid item xs={12} md={6}>
-                    <Card elevation={1} sx={{ borderRadius: '12px', height: '100%' }}>
-                      <CardHeader 
-                        title="Quiet Hours" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <FormControlLabel
-                          control={
-                            <Switch 
-                              checked={notifications.quietHours.enabled} 
-                              onChange={handleQuietHoursChange('enabled')}
-                              color="primary"
-                            />
-                          }
-                          label="Enable Quiet Hours"
-                        />
-                        
-                        {notifications.quietHours.enabled && (
-                          <Box sx={{ mt: 2 }}>
-                            <Grid container spacing={2}>
-                              <Grid item xs={12} sm={6}>
-                                <TextField
-                                  label="Start Time"
-                                  type="time"
-                                  value={notifications.quietHours.start}
-                                  onChange={handleQuietHoursChange('start')}
-                                  InputLabelProps={{
-                                    shrink: true,
-                                  }}
-                                  inputProps={{
-                                    step: 300, // 5 min
-                                  }}
-                                  fullWidth
-                                />
-                              </Grid>
-                              <Grid item xs={12} sm={6}>
-                                <TextField
-                                  label="End Time"
-                                  type="time"
-                                  value={notifications.quietHours.end}
-                                  onChange={handleQuietHoursChange('end')}
-                                  InputLabelProps={{
-                                    shrink: true,
-                                  }}
-                                  inputProps={{
-                                    step: 300, // 5 min
-                                  }}
-                                  fullWidth
-                                />
-                              </Grid>
-                            </Grid>
-                            
-                            <Typography variant="subtitle2" sx={{ mt: 3, mb: 1 }}>
-                              Do Not Disturb Days
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                              {DAYS_OF_WEEK.map((day) => (
-                                <Chip
-                                  key={day}
-                                  label={day}
-                                  onClick={() => handleQuietHoursDayToggle(day)}
-                                  color={notifications.quietHours.days.includes(day) ? "primary" : "default"}
-                                  variant={notifications.quietHours.days.includes(day) ? "filled" : "outlined"}
-                                />
-                              ))}
-                            </Box>
-                            
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                              No notifications will be sent during these days/times
-                            </Typography>
-                          </Box>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  
-                  {/* Notification Sound Card */}
-                  <Grid item xs={12} md={6}>
-                    <Card elevation={1} sx={{ borderRadius: '12px', height: '100%' }}>
-                      <CardHeader 
-                        title="Notification Sound" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <FormControlLabel
-                          control={
-                            <Switch 
-                              checked={notifications.sound.enabled} 
-                              onChange={(e) => setNotifications({
-                                ...notifications,
-                                sound: {
-                                  ...notifications.sound,
-                                  enabled: e.target.checked
-                                }
-                              })}
-                              color="primary"
-                            />
-                          }
-                          label="Enable Notification Sounds"
-                        />
-                        
-                        {notifications.sound.enabled && (
-                          <Box sx={{ mt: 3 }}>
-                            <Typography gutterBottom>Volume: {notifications.sound.volume}%</Typography>
-                            <Grid container spacing={2} alignItems="center">
-                              <Grid item>
-                                <VolumeUpIcon color="action" />
-                              </Grid>
-                              <Grid item xs>
-                                <Slider
-                                  value={notifications.sound.volume}
-                                  onChange={(e, newValue) => setNotifications({
-                                    ...notifications,
-                                    sound: {
-                                      ...notifications.sound,
-                                      volume: newValue
-                                    }
-                                  })}
-                                  aria-labelledby="notification-volume-slider"
-                                />
-                              </Grid>
-                            </Grid>
-                            
-                            <Button 
-                              variant="outlined" 
-                              size="small" 
-                              startIcon={<VolumeUpIcon />}
-                              sx={{ mt: 2 }}
-                            >
-                              Test Sound
-                            </Button>
-                          </Box>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
-                
-                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                  <Button variant="outlined" color="inherit">
-                    Cancel
-                  </Button>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    startIcon={<SaveIcon />}
-                    onClick={handleSaveSettings}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              </Box>
-            )}
-            
-            {/* Study Preferences Section */}
-            {activeSection === 'study' && (
-              <Box>
-                <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
-                  Study Preferences
-                </Typography>
-                
-                <Grid container spacing={3}>
-                  {/* Focus Settings Card */}
-                  <Grid item xs={12} md={6}>
-                    <Card elevation={1} sx={{ borderRadius: '12px', height: '100%' }}>
-                      <CardHeader 
-                        title="Focus Settings" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <FormControlLabel
-                          control={
-                            <Switch 
-                              checked={settings.study.focusMode} 
-                              onChange={(e) => handleSettingChange('study', 'focusMode', e.target.checked)}
-                              color="primary"
-                            />
-                          }
-                          label={
-                            <Box>
-                              <Typography variant="body1">
-                                Focus Mode
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                Minimize distractions during study sessions
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                        
-                        <Box sx={{ mt: 3 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Eye Break Reminders
-                          </Typography>
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                checked={settings.eyeBreak.enabled} 
-                                onChange={(e) => handleSettingChange('eyeBreak', 'enabled', e.target.checked)}
-                                color="primary"
-                              />
-                            }
-                            label="Enable eye break reminders"
-                          />
-                          
-                          {settings.eyeBreak.enabled && (
-                            <Box sx={{ mt: 2, ml: 4 }}>
-                              <Typography gutterBottom>
-                                Remind every {settings.eyeBreak.interval} minutes
-                              </Typography>
-                              <Slider
-                                value={settings.eyeBreak.interval}
-                                onChange={(e, newValue) => handleSettingChange('eyeBreak', 'interval', newValue)}
-                                aria-labelledby="eye-break-interval-slider"
-                                valueLabelDisplay="auto"
-                                step={5}
-                                marks
-                                min={10}
-                                max={60}
-                              />
-                              <Typography variant="caption" color="text.secondary">
-                                Recommended: 20 minutes (20-20-20 rule)
-                              </Typography>
-                            </Box>
-                          )}
-                        </Box>
-                        
-                        <Box sx={{ mt: 3 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Posture Alerts
-                          </Typography>
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                checked={settings.posture.enabled} 
-                                onChange={(e) => handleSettingChange('posture', 'enabled', e.target.checked)}
-                                color="primary"
-                              />
-                            }
-                            label="Enable posture reminders"
-                          />
-                          
-                          {settings.posture.enabled && (
-                            <Box sx={{ mt: 2, ml: 4 }}>
-                              <Typography gutterBottom>
-                                Sensitivity: {settings.posture.sensitivity}
-                              </Typography>
-                              <Slider
-                                value={settings.posture.sensitivity}
-                                onChange={(e, newValue) => handleSettingChange('posture', 'sensitivity', newValue)}
-                                aria-labelledby="posture-sensitivity-slider"
-                                valueLabelDisplay="auto"
-                                step={1}
-                                marks
-                                min={1}
-                                max={10}
-                              />
-                              <Typography variant="caption" color="text.secondary">
-                                Higher values will trigger alerts more frequently
-                              </Typography>
-                            </Box>
-                          )}
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  
-                  {/* Break Settings Card */}
-                  <Grid item xs={12} md={6}>
-                    <Card elevation={1} sx={{ borderRadius: '12px', height: '100%' }}>
-                      <CardHeader 
-                        title="Break Settings" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <FormControlLabel
-                          control={
-                            <Switch 
-                              checked={settings.study.autoBreak} 
-                              onChange={(e) => handleSettingChange('study', 'autoBreak', e.target.checked)}
-                              color="primary"
-                            />
-                          }
-                          label={
-                            <Box>
-                              <Typography variant="body1">
-                                Automatic Break Scheduling
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                Suggest breaks based on your study duration
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                        
-                        {settings.study.autoBreak && (
-                          <Box sx={{ mt: 3, ml: 4 }}>
-                            <Typography gutterBottom>
-                              Break duration: {settings.study.breakDuration} minutes
-                            </Typography>
-                            <Slider
-                              value={settings.study.breakDuration}
-                              onChange={(e, newValue) => handleSettingChange('study', 'breakDuration', newValue)}
-                              aria-labelledby="break-duration-slider"
-                              valueLabelDisplay="auto"
-                              step={1}
-                              marks
-                              min={1}
-                              max={15}
-                            />
-                          </Box>
-                        )}
-                        
-                        <Box sx={{ mt: 4 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Study Session Preferences
-                          </Typography>
-                          
-                          <FormControl component="fieldset" sx={{ mt: 2 }}>
-                            <FormLabel component="legend">Preferred Study Method</FormLabel>
-                            <RadioGroup
-                              defaultValue="pomodoro"
-                              name="study-method-group"
-                            >
-                              <FormControlLabel value="pomodoro" control={<Radio />} label="Pomodoro Technique (25/5)" />
-                              <FormControlLabel value="flowtime" control={<Radio />} label="Flowtime Technique (flexible)" />
-                              <FormControlLabel value="custom" control={<Radio />} label="Custom Schedule" />
-                            </RadioGroup>
-                          </FormControl>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  
-                  {/* Study Goals Card */}
-                  <Grid item xs={12}>
-                    <Card elevation={1} sx={{ borderRadius: '12px' }}>
-                      <CardHeader 
-                        title="Study Goals" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <Grid container spacing={3}>
-                          <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2" gutterBottom>
-                              Daily Study Target
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                              <TextField
-                                type="number"
-                                label="Hours"
-                                defaultValue={2}
-                                InputProps={{ inputProps: { min: 0, max: 12 } }}
-                                sx={{ width: 100 }}
-                              />
-                              <Typography>hours</Typography>
-                              <TextField
-                                type="number"
-                                label="Minutes"
-                                defaultValue={30}
-                                InputProps={{ inputProps: { min: 0, max: 59 } }}
-                                sx={{ width: 100 }}
-                              />
-                              <Typography>minutes</Typography>
-                            </Box>
-                          </Grid>
-                          
-                          <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2" gutterBottom>
-                              Weekly Study Target
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                              <TextField
-                                type="number"
-                                label="Hours"
-                                defaultValue={15}
-                                InputProps={{ inputProps: { min: 0, max: 80 } }}
-                                sx={{ width: 100 }}
-                              />
-                              <Typography>hours</Typography>
-                            </Box>
-                          </Grid>
-                          
-                          <Grid item xs={12}>
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  defaultChecked={true}
-                                  color="primary"
-                                />
-                              }
-                              label="Send me weekly progress reports against my goals"
-                            />
-                          </Grid>
-                        </Grid>
-                        
-                        <Box sx={{ mt: 3 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            AI Assistance
-                          </Typography>
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                checked={settings.ai.suggestions} 
-                                onChange={(e) => handleSettingChange('ai', 'suggestions', e.target.checked)}
-                                color="primary"
-                              />
-                            }
-                            label="Enable AI study suggestions based on my performance"
-                          />
-                          
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                checked={settings.ai.voiceCommands} 
-                                onChange={(e) => handleSettingChange('ai', 'voiceCommands', e.target.checked)}
-                                color="primary"
-                              />
-                            }
-                            label="Enable voice commands during study sessions"
-                          />
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
-                
-                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                  <Button variant="outlined" color="inherit">
-                    Cancel
-                  </Button>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    startIcon={<SaveIcon />}
-                    onClick={handleSaveSettings}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              </Box>
-            )}
-            
-            {/* Appearance Section */}
-            {activeSection === 'appearance' && (
-              <Box>
-                <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
-                  Appearance
-                </Typography>
-                
-                <Grid container spacing={3}>
-                  {/* Theme Settings Card */}
-                  <Grid item xs={12} md={6}>
-                    <Card elevation={1} sx={{ borderRadius: '12px', height: '100%' }}>
-                      <CardHeader 
-                        title="Theme Settings" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Color Theme
-                        </Typography>
-                        
-                        <FormControl component="fieldset" sx={{ mt: 1 }}>
-                          <RadioGroup
-                            defaultValue="blue"
-                            name="theme-color-group"
-                          >
-                            <FormControlLabel 
-                              value="blue" 
-                              control={<Radio />} 
-                              label={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#2196F3' }} />
-                                  <Typography>Blue (Default)</Typography>
-                                </Box>
-                              } 
-                            />
-                            <FormControlLabel 
-                              value="purple" 
-                              control={<Radio />} 
-                              label={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#9C27B0' }} />
-                                  <Typography>Purple</Typography>
-                                </Box>
-                              } 
-                            />
-                            <FormControlLabel 
-                              value="green" 
-                              control={<Radio />} 
-                              label={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#4CAF50' }} />
-                                  <Typography>Green</Typography>
-                                </Box>
-                              } 
-                            />
-                            <FormControlLabel 
-                              value="orange" 
-                              control={<Radio />} 
-                              label={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#FF9800' }} />
-                                  <Typography>Orange</Typography>
-                                </Box>
-                              } 
-                            />
-                          </RadioGroup>
-                        </FormControl>
-                        
-                        <Box sx={{ mt: 3 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Display Mode
-                          </Typography>
-                          
-                          <FormControl component="fieldset" sx={{ mt: 1 }}>
-                            <RadioGroup
-                              defaultValue="light"
-                              name="theme-mode-group"
-                            >
-                              <FormControlLabel 
-                                value="light" 
-                                control={<Radio />} 
-                                label={
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <LightModeIcon fontSize="small" />
-                                    <Typography>Light Mode</Typography>
-                                  </Box>
-                                } 
-                              />
-                              <FormControlLabel 
-                                value="dark" 
-                                control={<Radio />} 
-                                label={
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <DarkModeIcon fontSize="small" />
-                                    <Typography>Dark Mode</Typography>
-                                  </Box>
-                                } 
-                              />
-                              <FormControlLabel 
-                                value="system" 
-                                control={<Radio />} 
-                                label={
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <SettingsBrightnessIcon fontSize="small" />
-                                    <Typography>Use System Setting</Typography>
-                                  </Box>
-                                } 
-                              />
-                            </RadioGroup>
-                          </FormControl>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  
-                  {/* Display Settings Card */}
-                  <Grid item xs={12} md={6}>
-                    <Card elevation={1} sx={{ borderRadius: '12px', height: '100%' }}>
-                      <CardHeader 
-                        title="Display Settings" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Text Size
-                        </Typography>
-                        
-                        <Box sx={{ width: '100%', mt: 2 }}>
-                          <Grid container spacing={2} alignItems="center">
-                            <Grid item>
-                              <Typography variant="caption">A</Typography>
-                            </Grid>
-                            <Grid item xs>
-                              <Slider
-                                defaultValue={1}
-                                step={0.25}
-                                marks
-                                min={0.75}
-                                max={1.5}
-                                valueLabelDisplay="auto"
-                                valueLabelFormat={(value) => `${value}x`}
-                              />
-                            </Grid>
-                            <Grid item>
-                              <Typography variant="h6">A</Typography>
-                            </Grid>
-                          </Grid>
-                        </Box>
-                        
-                        <Box sx={{ mt: 4 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Layout Density
-                          </Typography>
-                          
-                          <FormControl component="fieldset" sx={{ mt: 1 }}>
-                            <RadioGroup
-                              defaultValue="comfortable"
-                              name="layout-density-group"
-                            >
-                              <FormControlLabel value="compact" control={<Radio />} label="Compact" />
-                              <FormControlLabel value="comfortable" control={<Radio />} label="Comfortable (Default)" />
-                              <FormControlLabel value="spacious" control={<Radio />} label="Spacious" />
-                            </RadioGroup>
-                          </FormControl>
-                        </Box>
-                        
-                        <Box sx={{ mt: 3 }}>
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                defaultChecked={true}
-                                color="primary"
-                              />
-                            }
-                            label="Show animations and transitions"
-                          />
-                          
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                defaultChecked={true}
-                                color="primary"
-                              />
-                            }
-                            label="Show engagement metrics on dashboard"
-                          />
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
-                
-                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                  <Button variant="outlined" color="inherit">
-                    Cancel
-                  </Button>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    startIcon={<SaveIcon />}
-                    onClick={handleSaveSettings}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              </Box>
-            )}
+                  <Icon size={20} />
+                  <span className="flex-1 text-left">{section.label}</span>
+                  {activeSection === section.id && (
+                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
 
-            {/* Camera & Audio Section */}
-            {activeSection === 'camera' && (
-              <Box>
-                <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
-                  Camera & Audio
-                </Typography>
-                
-                <Grid container spacing={3}>
-                  {/* Camera Settings Card */}
-                  <Grid item xs={12} md={6}>
-                    <Card elevation={1} sx={{ borderRadius: '12px', height: '100%' }}>
-                      <CardHeader 
-                        title="Camera Settings" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                        action={
-                          <Button 
-                            variant="outlined" 
-                            size="small" 
-                            startIcon={<CameraIcon />}
-                          >
-                            Test Camera
-                          </Button>
-                        }
-                      />
-                      <Divider />
-                      <CardContent>
-                        <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Camera Device
-                          </Typography>
-                          <FormControl fullWidth>
-                            <InputLabel id="camera-select-label">Select Camera</InputLabel>
-                            <Select
-                              labelId="camera-select-label"
-                              id="camera-select"
-                              defaultValue="default"
-                              label="Select Camera"
-                            >
-                              <MenuItem value="default">Default Camera (Webcam)</MenuItem>
-                              <MenuItem value="integrated">Integrated Camera</MenuItem>
-                              <MenuItem value="external">External USB Camera</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </Box>
-                        
-                        <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Video Quality
-                          </Typography>
-                          <FormControl fullWidth>
-                            <InputLabel id="video-quality-label">Video Quality</InputLabel>
-                            <Select
-                              labelId="video-quality-label"
-                              id="video-quality"
-                              defaultValue="medium"
-                              label="Video Quality"
-                            >
-                              <MenuItem value="low">Low (360p) - Less bandwidth</MenuItem>
-                              <MenuItem value="medium">Medium (480p) - Recommended</MenuItem>
-                              <MenuItem value="high">High (720p) - More bandwidth</MenuItem>
-                            </Select>
-                          </FormControl>
-                          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                            Higher quality requires more bandwidth and processing power
-                          </Typography>
-                        </Box>
-                        
-                        <Box>
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                defaultChecked={true}
-                                color="primary"
-                              />
-                            }
-                            label="Enable background blur"
-                          />
-                          
-                          <FormControlLabel
-                            control={
-                              <Switch 
-                                defaultChecked={false}
-                                color="primary"
-                              />
-                            }
-                            label="Show camera preview during sessions"
-                          />
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  
-                  {/* Audio Settings Card */}
-                  <Grid item xs={12} md={6}>
-                    <Card elevation={1} sx={{ borderRadius: '12px', height: '100%' }}>
-                      <CardHeader 
-                        title="Audio Settings" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                        action={
-                          <Button 
-                            variant="outlined" 
-                            size="small" 
-                            startIcon={<MicIcon />}
-                          >
-                            Test Mic
-                          </Button>
-                        }
-                      />
-                      <Divider />
-                      <CardContent>
-                        <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Microphone Device
-                          </Typography>
-                          <FormControl fullWidth>
-                            <InputLabel id="mic-select-label">Select Microphone</InputLabel>
-                            <Select
-                              labelId="mic-select-label"
-                              id="mic-select"
-                              defaultValue="default"
-                              label="Select Microphone"
-                            >
-                              <MenuItem value="default">Default Microphone</MenuItem>
-                              <MenuItem value="integrated">Integrated Microphone</MenuItem>
-                              <MenuItem value="headset">Headset Microphone</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </Box>
-                        
-                        <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Microphone Volume
-                          </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <MicOffIcon fontSize="small" />
-                            <Slider
-                              defaultValue={75}
-                              aria-label="Microphone Volume"
-                              valueLabelDisplay="auto"
-                            />
-                            <MicIcon fontSize="small" />
-                          </Box>
-                        </Box>
-                        
-                        <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Speaker Device
-                          </Typography>
-                          <FormControl fullWidth>
-                            <InputLabel id="speaker-select-label">Select Speaker</InputLabel>
-                            <Select
-                              labelId="speaker-select-label"
-                              id="speaker-select"
-                              defaultValue="default"
-                              label="Select Speaker"
-                            >
-                              <MenuItem value="default">Default Speaker</MenuItem>
-                              <MenuItem value="integrated">Integrated Speaker</MenuItem>
-                              <MenuItem value="headphones">Headphones</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </Box>
-                        
-                        <Box>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Speaker Volume
-                          </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <VolumeOffIcon fontSize="small" />
-                            <Slider
-                              defaultValue={60}
-                              aria-label="Speaker Volume"
-                              valueLabelDisplay="auto"
-                            />
-                            <VolumeUpIcon fontSize="small" />
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  
-                  {/* Advanced Settings Card */}
-                  <Grid item xs={12}>
-                    <Card elevation={1} sx={{ borderRadius: '12px' }}>
-                      <CardHeader 
-                        title="Advanced Settings" 
-                        titleTypographyProps={{ variant: 'h6' }}
-                      />
-                      <Divider />
-                      <CardContent>
-                        <Grid container spacing={3}>
-                          <Grid item xs={12} md={6}>
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  defaultChecked={true}
-                                  color="primary"
-                                />
-                              }
-                              label="Noise suppression"
-                            />
-                            
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  defaultChecked={true}
-                                  color="primary"
-                                />
-                              }
-                              label="Echo cancellation"
-                            />
-                            
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  defaultChecked={false}
-                                  color="primary"
-                                />
-                              }
-                              label="Auto gain control"
-                            />
-                          </Grid>
-                          
-                          <Grid item xs={12} md={6}>
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  defaultChecked={true}
-                                  color="primary"
-                                />
-                              }
-                              label="Automatically adjust lighting"
-                            />
-                            
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  defaultChecked={false}
-                                  color="primary"
-                                />
-                              }
-                              label="High dynamic range (HDR)"
-                            />
-                            
-                            <FormControlLabel
-                              control={
-                                <Switch 
-                                  defaultChecked={true}
-                                  color="primary"
-                                />
-                              }
-                              label="Mute microphone when joining sessions"
-                            />
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
-                
-                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                  <Button variant="outlined" color="inherit">
-                    Cancel
-                  </Button>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    startIcon={<SaveIcon />}
-                    onClick={handleSaveSettings}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              </Box>
-            )}
-            
-            {/* Security Section */}
-            {activeSection === 'security' && (
-              <Box>
-                <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
-                  Security
-                </Typography>
-                
-                {/* Content will be added here */}
-                
-                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                  <Button variant="outlined" color="inherit">
-                    Cancel
-                  </Button>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    startIcon={<SaveIcon />}
-                    onClick={handleSaveSettings}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              </Box>
-            )}
-            
-            {/* Help & Support Section */}
-            {activeSection === 'help' && (
-              <Box>
-                <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
-                  Help & Support
-                </Typography>
-                
-                {/* Content will be added here */}
-                
-                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                  <Button variant="outlined" color="inherit">
-                    Cancel
-                  </Button>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    startIcon={<SaveIcon />}
-                    onClick={handleSaveSettings}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              </Box>
-            )}
-            
-            {/* About Section */}
-            {activeSection === 'about' && (
-              <Box>
-                <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
-                  About
-                </Typography>
-                
-                {/* Content will be added here */}
-                
-                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                  <Button variant="outlined" color="inherit">
-                    Cancel
-                  </Button>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    startIcon={<SaveIcon />}
-                    onClick={handleSaveSettings}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              </Box>
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
-      
-      {/* Dialogs */}
-      {/* Change Password Dialog */}
-      <Dialog 
-        open={openDialog === 'changePassword'} 
-        onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Change Password</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 1 }}>
-            <TextField
-              margin="dense"
+        {/* Main Content */}
+        <main className="flex-1 p-6">
+          <div className="max-w-4xl">
+            {renderContent()}
+          </div>
+
+          {/* Save/Cancel Buttons */}
+          {unsavedChanges && (
+            <div className="fixed bottom-6 right-6 left-6 md:left-auto md:right-6 md:w-96 bg-white rounded-xl shadow-2xl p-5 border-2 border-orange-200 animate-slide-up z-50">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-orange-50 rounded-lg">
+                  <AlertTriangle size={20} className="text-orange-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-gray-800">Unsaved Changes</p>
+                  <p className="text-sm text-gray-600">Don't forget to save your changes</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCancel}
+                  className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 font-medium"
+                >
+                  <X size={18} />
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all flex items-center justify-center gap-2 font-semibold shadow-md"
+                >
+                  <Save size={18} />
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-slide-up z-50 border border-gray-700">
+          <div className="p-1.5 bg-green-500 rounded-full">
+            <Check size={16} className="text-white" />
+          </div>
+          <span className="font-medium">{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Modals */}
+      {showModal === 'password' && (
+        <Modal
+          title="Change Password"
+          onClose={() => setShowModal(null)}
+          onConfirm={() => {
+            showSuccessToast('Password updated successfully!');
+            setShowModal(null);
+            setTempPassword({ current: '', new: '', confirm: '' });
+          }}
+        >
+          <div className="space-y-4">
+            <InputField
               label="Current Password"
-              type={passwordValues.showCurrent ? "text" : "password"}
-              fullWidth
-              variant="outlined"
-              value={passwordValues.current}
-              onChange={handlePasswordChange('current')}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => togglePasswordVisibility('showCurrent')}
-                      edge="end"
-                    >
-                      {passwordValues.showCurrent ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
+              type="password"
+              icon={Lock}
+              value={tempPassword.current}
+              onChange={(e) => setTempPassword({...tempPassword, current: e.target.value})}
+              placeholder="Enter current password"
             />
-            <TextField
-              margin="dense"
+            <InputField
               label="New Password"
-              type={passwordValues.showNew ? "text" : "password"}
-              fullWidth
-              variant="outlined"
-              value={passwordValues.new}
-              onChange={handlePasswordChange('new')}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => togglePasswordVisibility('showNew')}
-                      edge="end"
-                    >
-                      {passwordValues.showNew ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
+              type="password"
+              icon={Lock}
+              value={tempPassword.new}
+              onChange={(e) => setTempPassword({...tempPassword, new: e.target.value})}
+              placeholder="Enter new password"
             />
-            <TextField
-              margin="dense"
+            <InputField
               label="Confirm New Password"
               type="password"
-              fullWidth
-              variant="outlined"
-              value={passwordValues.confirm}
-              onChange={handlePasswordChange('confirm')}
+              icon={Lock}
+              value={tempPassword.confirm}
+              onChange={(e) => setTempPassword({...tempPassword, confirm: e.target.value})}
+              placeholder="Re-enter new password"
             />
-            
-            {/* Password strength indicator */}
-            {passwordValues.new && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" gutterBottom>
-                  Password Strength
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={passwordValues.new.length > 8 ? 100 : (passwordValues.new.length * 12.5)} 
-                      color={
-                        passwordValues.new.length < 4 ? "error" : 
-                        passwordValues.new.length < 8 ? "warning" : "success"
-                      }
-                      sx={{ height: 8, borderRadius: 4 }}
-                    />
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    {passwordValues.new.length < 4 ? "Weak" : 
-                     passwordValues.new.length < 8 ? "Medium" : "Strong"}
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button 
-            onClick={handleCloseDialog} 
-            variant="contained" 
-            color="primary"
-            disabled={
-              !passwordValues.current || 
-              !passwordValues.new || 
-              !passwordValues.confirm || 
-              passwordValues.new !== passwordValues.confirm ||
-              passwordValues.new.length < 8
-            }
-          >
-            Update Password
-          </Button>
-        </DialogActions>
-      </Dialog>
-      
-      {/* Deactivate Account Dialog */}
-      <Dialog
-        open={openDialog === 'deactivateAccount'}
-        onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ color: 'warning.main', display: 'flex', alignItems: 'center', gap: 1 }}>
-          <WarningIcon color="warning" />
-          Deactivate Account
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" paragraph>
-            Are you sure you want to deactivate your account? Your account will be temporarily disabled and you won't be able to access Study Eyes.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            You can reactivate your account at any time by logging in again.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button color="warning" variant="contained" onClick={handleCloseDialog}>
-            Deactivate Account
-          </Button>
-        </DialogActions>
-      </Dialog>
-      
-      {/* Delete Account Dialog */}
-      <Dialog
-        open={openDialog === 'deleteAccount'}
-        onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ color: 'error.main', display: 'flex', alignItems: 'center', gap: 1 }}>
-          <DeleteForeverIcon color="error" />
-          Delete Account Permanently
-        </DialogTitle>
-        <DialogContent>
-          <Alert severity="error" sx={{ mb: 2 }}>
-            This action cannot be undone. All your data will be permanently deleted.
-          </Alert>
-          <Typography variant="body1" paragraph>
-            Are you absolutely sure you want to delete your account? This will:
-          </Typography>
-          <Box component="ul" sx={{ pl: 2 }}>
-            <Typography component="li" variant="body2">
-              Permanently delete your profile and personal information
-            </Typography>
-            <Typography component="li" variant="body2">
-              Remove all your study sessions, engagement data, and analytics
-            </Typography>
-            <Typography component="li" variant="body2">
-              Cancel your access to all courses and materials
-            </Typography>
-          </Box>
-          <TextField
-            margin="dense"
-            label="Type 'DELETE' to confirm"
-            fullWidth
-            variant="outlined"
-            sx={{ mt: 2 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button color="error" variant="contained" onClick={handleCloseDialog}>
-            Delete Permanently
-          </Button>
-        </DialogActions>
-      </Dialog>
-      
-      {/* Add Parent Email Dialog */}
-      <Dialog
-        open={openDialog === 'addParentEmail'}
-        onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Add Parent/Guardian Email</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" paragraph sx={{ mt: 1 }}>
-            Add your parent or guardian's email to share progress reports and important updates.
-          </Typography>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Parent/Guardian Email"
-            type="email"
-            fullWidth
-            variant="outlined"
-            placeholder="parent@example.com"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleCloseDialog} variant="contained" color="primary">
-            Add Email
-          </Button>
-        </DialogActions>
-      </Dialog>      <Grid container spacing={3}>
-        {/* Notifications Settings */}
-        <Grid item xs={12} md={6}>
-          <Paper 
-            elevation={3} 
-            sx={{ 
-              p: 4, 
-              background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.05))',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(33, 150, 243, 0.3)',
-              borderRadius: '20px',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '3px',
-                background: 'linear-gradient(90deg, #2196f3, #42a5f5)',
-              },
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-              <NotificationsIcon sx={{ 
-                mr: 2, 
-                color: '#2196f3',
-                fontSize: 32,
-                filter: 'drop-shadow(0 0 8px rgba(33, 150, 243, 0.4))',
-              }} />
-              <Typography 
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  background: 'linear-gradient(45deg, #2196f3, #42a5f5)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                🔔 Notifications
-              </Typography>
-            </Box>
+            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-xs text-blue-800 font-medium mb-1">Password Requirements:</p>
+              <ul className="text-xs text-blue-700 space-y-0.5">
+                <li>• At least 8 characters long</li>
+                <li>• Include uppercase and lowercase letters</li>
+                <li>• Include at least one number</li>
+                <li>• Include at least one special character</li>
+              </ul>
+            </div>
+          </div>
+        </Modal>
+      )}
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.notifications.eyeBreakReminder}
-                    onChange={handleSwitchChange('notifications', 'eyeBreakReminder')}
-                    sx={{
-                      '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: '#2196f3',
-                      },
-                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: '#2196f3',
-                      },
-                    }}
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                      👁️ Eye break reminders
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Get notified when it's time for an eye break
-                    </Typography>
-                  </Box>
-                }
+      {showModal === 'deactivate' && (
+        <Modal
+          title="Deactivate Account"
+          onClose={() => setShowModal(null)}
+          onConfirm={() => {
+            showSuccessToast('Account deactivated successfully');
+            setShowModal(null);
+          }}
+          danger
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+              <p className="text-sm text-orange-800 font-medium mb-2">⚠️ What happens when you deactivate:</p>
+              <ul className="text-sm text-orange-700 space-y-1">
+                <li>• Your account will be temporarily disabled</li>
+                <li>• Your profile will be hidden from others</li>
+                <li>• You can reactivate anytime by logging in</li>
+                <li>• Your data will be preserved</li>
+              </ul>
+            </div>
+            <p className="text-gray-600">Are you sure you want to deactivate your account?</p>
+          </div>
+        </Modal>
+      )}
+
+      {showModal === 'delete' && (
+        <Modal
+          title="Delete Account Permanently"
+          onClose={() => setShowModal(null)}
+          onConfirm={() => {
+            showSuccessToast('Account deletion initiated');
+            setShowModal(null);
+          }}
+          danger
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-red-50 rounded-lg border-2 border-red-200">
+              <p className="text-sm text-red-800 font-bold mb-2">⚠️ WARNING: This action cannot be undone!</p>
+              <p className="text-sm text-red-700 mb-3">The following will be permanently deleted:</p>
+              <ul className="text-sm text-red-700 space-y-1">
+                <li>✗ All your study sessions and progress</li>
+                <li>✗ Your profile and account data</li>
+                <li>✗ All saved preferences and settings</li>
+                <li>✗ Session recordings and analytics</li>
+                <li>✗ All associated content and files</li>
+              </ul>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Type <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">DELETE</span> to confirm
+              </label>
+              <input
+                type="text"
+                placeholder="Type DELETE"
+                className="w-full px-4 py-2.5 border-2 border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all outline-none"
               />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.notifications.postureAlert}
-                    onChange={handleSwitchChange('notifications', 'postureAlert')}
-                    sx={{
-                      '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: '#2196f3',
-                      },
-                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: '#2196f3',
-                      },
-                    }}
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                      🏃 Posture alerts
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Receive alerts for poor posture detection
-                    </Typography>
-                  </Box>
-                }
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.notifications.studyGoalReminder}
-                    onChange={handleSwitchChange('notifications', 'studyGoalReminder')}
-                    sx={{
-                      '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: '#2196f3',
-                      },
-                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: '#2196f3',
-                      },
-                    }}
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                      🎯 Study goal reminders
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Stay motivated with goal progress updates
-                    </Typography>
-                  </Box>
-                }
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.notifications.dailySummary}
-                    onChange={handleSwitchChange('notifications', 'dailySummary')}
-                    sx={{
-                      '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: '#2196f3',
-                      },
-                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: '#2196f3',
-                      },
-                    }}
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                      📊 Daily summary notifications
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Get daily study and health summaries
-                    </Typography>
-                  </Box>
-                }
-              />
-            </Box>
-          </Paper>
-        </Grid>        {/* Eye Care Settings */}
-        <Grid item xs={12} md={6}>
-          <Paper 
-            elevation={3} 
-            sx={{ 
-              p: 4, 
-              background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.05))',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(76, 175, 80, 0.3)',
-              borderRadius: '20px',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '3px',
-                background: 'linear-gradient(90deg, #4caf50, #66bb6a)',
-              },
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-              <EyeIcon sx={{ 
-                mr: 2, 
-                color: '#4caf50',
-                fontSize: 32,
-                filter: 'drop-shadow(0 0 8px rgba(76, 175, 80, 0.4))',
-              }} />
-              <Typography 
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                👁️ Eye Care
-              </Typography>
-            </Box>
+            </div>
+          </div>
+        </Modal>
+      )}
 
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={settings.eyeBreak.enabled}
-                  onChange={handleSwitchChange('eyeBreak', 'enabled')}
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': {
-                      color: '#4caf50',
-                    },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#4caf50',
-                    },
-                  }}
-                />
-              }
-              label={
-                <Box>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    Enable eye break reminders
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Follow the 20-20-20 rule for healthy eyes
-                  </Typography>
-                </Box>
-              }
-              sx={{ mb: 4 }}
-            />
+      {showModal === '2fa' && (
+        <Modal
+          title="Enable Two-Factor Authentication"
+          onClose={() => setShowModal(null)}
+          onConfirm={() => {
+            updateSetting('twoFactorEnabled', true);
+            showSuccessToast('2FA enabled successfully!');
+            setShowModal(null);
+          }}
+        >
+          <div className="space-y-5">
+            <div className="text-center">
+              <p className="text-gray-700 mb-4">Scan this QR code with your authenticator app:</p>
+              <div className="bg-gray-100 w-48 h-48 mx-auto rounded-xl flex items-center justify-center border-2 border-gray-300">
+                <div className="text-center">
+                  <div className="text-6xl mb-2">📱</div>
+                  <span className="text-sm text-gray-500">QR Code</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Or enter this code manually:</label>
+              <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-4 text-center">
+                <code className="text-lg font-mono font-bold text-gray-800 tracking-wider">ABCD EFGH IJKL MNOP</code>
+              </div>
+            </div>
+            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-xs text-blue-800 font-medium mb-1">Recommended Apps:</p>
+              <p className="text-xs text-blue-700">Google Authenticator, Authy, Microsoft Authenticator</p>
+            </div>
+          </div>
+        </Modal>
+      )}
 
-            <Box sx={{ mb: 4 }}>
-              <Typography gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                ⏰ Break interval: {settings.eyeBreak.interval} minutes
-              </Typography>
-              <Slider
-                value={settings.eyeBreak.interval}
-                onChange={handleSliderChange('eyeBreak', 'interval')}
-                min={10}
-                max={60}
-                step={5}
-                valueLabelDisplay="auto"
-                disabled={!settings.eyeBreak.enabled}
-                sx={{
-                  color: '#4caf50',
-                  '& .MuiSlider-thumb': {
-                    boxShadow: '0 0 15px rgba(76, 175, 80, 0.4)',
-                  },
-                  '& .MuiSlider-track': {
-                    background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
-                  },
-                  '& .MuiSlider-rail': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  },
-                }}
-              />
-            </Box>
+      {showModal === 'signoutAll' && (
+        <Modal
+          title="Sign Out All Sessions"
+          onClose={() => setShowModal(null)}
+          onConfirm={() => {
+            showSuccessToast('Signed out from all devices');
+            setShowModal(null);
+          }}
+          danger
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+              <p className="text-sm text-orange-800 font-medium mb-2">⚠️ What will happen:</p>
+              <ul className="text-sm text-orange-700 space-y-1">
+                <li>• You'll be signed out from all devices</li>
+                <li>• Except this current session</li>
+                <li>• You'll need to log in again on those devices</li>
+                <li>• Active sessions will be terminated immediately</li>
+              </ul>
+            </div>
+            <p className="text-gray-600">This is useful if you've lost a device or suspect unauthorized access.</p>
+          </div>
+        </Modal>
+      )}
 
-            <Box>
-              <Typography gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                ⏱️ Break duration: {settings.eyeBreak.duration} seconds
-              </Typography>
-              <Slider
-                value={settings.eyeBreak.duration}
-                onChange={handleSliderChange('eyeBreak', 'duration')}
-                min={10}
-                max={60}
-                step={5}
-                valueLabelDisplay="auto"
-                disabled={!settings.eyeBreak.enabled}
-                sx={{
-                  color: '#4caf50',
-                  '& .MuiSlider-thumb': {
-                    boxShadow: '0 0 15px rgba(76, 175, 80, 0.4)',
-                  },
-                  '& .MuiSlider-track': {
-                    background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
-                  },
-                  '& .MuiSlider-rail': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  },
-                }}
-              />
-            </Box>
-          </Paper>
-        </Grid>        {/* Posture Settings */}
-        <Grid item xs={12} md={6}>
-          <Paper 
-            elevation={3} 
-            sx={{ 
-              p: 4, 
-              background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.05))',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 152, 0, 0.3)',
-              borderRadius: '20px',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '3px',
-                background: 'linear-gradient(90deg, #ff9800, #ffb74d)',
-              },
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-              <HealthIcon sx={{ 
-                mr: 2, 
-                color: '#ff9800',
-                fontSize: 32,
-                filter: 'drop-shadow(0 0 8px rgba(255, 152, 0, 0.4))',
-              }} />
-              <Typography 
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  background: 'linear-gradient(45deg, #ff9800, #ffb74d)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                🏃 Posture Monitoring
-              </Typography>
-            </Box>
+      <style jsx>{`
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
+    </div>
+  );
+};
 
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={settings.posture.enabled}
-                  onChange={handleSwitchChange('posture', 'enabled')}
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': {
-                      color: '#ff9800',
-                    },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#ff9800',
-                    },
-                  }}
-                />
-              }
-              label={
-                <Box>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    Enable posture monitoring
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Monitor your sitting posture and get alerts
-                  </Typography>
-                </Box>
-              }
-              sx={{ mb: 4 }}
-            />
-
-            <Box>
-              <Typography gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                ⚠️ Alert sensitivity: {settings.posture.sensitivity}%
-              </Typography>
-              <Slider
-                value={settings.posture.sensitivity}
-                onChange={handleSliderChange('posture', 'sensitivity')}
-                min={25}
-                max={100}
-                step={5}
-                valueLabelDisplay="auto"
-                disabled={!settings.posture.enabled}
-                sx={{
-                  color: '#ff9800',
-                  '& .MuiSlider-thumb': {
-                    boxShadow: '0 0 15px rgba(255, 152, 0, 0.4)',
-                  },
-                  '& .MuiSlider-track': {
-                    background: 'linear-gradient(45deg, #ff9800, #ffb74d)',
-                  },
-                  '& .MuiSlider-rail': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  },
-                }}
-              />
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontWeight: 500 }}>
-                💡 Higher sensitivity means more frequent posture alerts
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
-
-        {/* Study Goals */}
-        <Grid item xs={12} md={6}>
-          <Paper 
-            elevation={3} 
-            sx={{ 
-              p: 4, 
-              background: 'linear-gradient(135deg, rgba(156, 39, 176, 0.15), rgba(156, 39, 176, 0.05))',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(156, 39, 176, 0.3)',
-              borderRadius: '20px',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '3px',
-                background: 'linear-gradient(90deg, #9c27b0, #ba68c8)',
-              },
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-              <TimerIcon sx={{ 
-                mr: 2, 
-                color: '#9c27b0',
-                fontSize: 32,
-                filter: 'drop-shadow(0 0 8px rgba(156, 39, 176, 0.4))',
-              }} />
-              <Typography 
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  background: 'linear-gradient(45deg, #9c27b0, #ba68c8)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                🎯 Study Goals
-              </Typography>
-            </Box>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <TextField
-                label="📅 Daily study goal (hours)"
-                type="number"
-                value={settings.study.dailyGoal}
-                onChange={handleNumberChange('study', 'dailyGoal')}
-                inputProps={{ min: 1, max: 16, step: 0.5 }}
-                fullWidth
-                variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#9c27b0',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#9c27b0',
-                    },
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#9c27b0',
-                  },
-                }}
-              />
-
-              <TextField
-                label="📊 Weekly study goal (hours)"
-                type="number"
-                value={settings.study.weeklyGoal}
-                onChange={handleNumberChange('study', 'weeklyGoal')}
-                inputProps={{ min: 5, max: 100, step: 1 }}
-                fullWidth
-                variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#9c27b0',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#9c27b0',
-                    },
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#9c27b0',
-                  },
-                }}
-              />
-
-              <TextField
-                label="🔔 Session reminder interval (minutes)"
-                type="number"
-                value={settings.study.sessionReminder}
-                onChange={handleNumberChange('study', 'sessionReminder')}
-                inputProps={{ min: 15, max: 120, step: 5 }}
-                fullWidth
-                variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#9c27b0',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#9c27b0',
-                    },
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#9c27b0',
-                  },
-                }}
-              />
-            </Box>
-          </Paper>
-        </Grid>        {/* AI Features */}
-        <Grid item xs={12}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: 4,
-              backgroundColor: 'rgba(30, 30, 30, 0.95)',
-              backdropFilter: 'blur(20px)',
-              borderRadius: 3,
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              position: 'relative',
-              overflow: 'hidden',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 12px 40px rgba(156, 39, 176, 0.2)',
-              },
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '3px',
-                background: 'linear-gradient(90deg, #9c27b0, #e91e63)',
-                animation: 'gradient-shift 3s ease-in-out infinite',
-              },
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-              <Box
-                sx={{
-                  mr: 2,
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(45deg, #9c27b0, #e91e63)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '20px',
-                  filter: 'drop-shadow(0 0 8px rgba(156, 39, 176, 0.4))',
-                }}
-              >
-                🤖
-              </Box>
-              <Typography 
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  background: 'linear-gradient(45deg, #9c27b0, #e91e63)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                AI Features
-              </Typography>
-            </Box>
-
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={4}>
-                <Card 
-                  sx={{ 
-                    backgroundColor: 'rgba(40, 40, 40, 0.9)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(156, 39, 176, 0.2)',
-                    borderRadius: 2,
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 8px 25px rgba(156, 39, 176, 0.3)',
-                      border: '1px solid rgba(156, 39, 176, 0.4)',
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Box
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: '50%',
-                          background: 'linear-gradient(45deg, #9c27b0, #e91e63)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          mr: 2,
-                          fontSize: '16px',
-                        }}
-                      >
-                        👁️
-                      </Box>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={settings.ai.attentionTracking}
-                            onChange={handleSwitchChange('ai', 'attentionTracking')}
-                            sx={{
-                              '& .MuiSwitch-switchBase.Mui-checked': {
-                                color: '#9c27b0',
-                              },
-                              '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                backgroundColor: '#9c27b0',
-                              },
-                            }}
-                          />
-                        }
-                        label={
-                          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                            Attention Tracking
-                          </Typography>
-                        }
-                        sx={{ m: 0 }}
-                      />
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Monitor focus levels and detect distractions using advanced AI algorithms
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <Card 
-                  sx={{ 
-                    backgroundColor: 'rgba(40, 40, 40, 0.9)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(156, 39, 176, 0.2)',
-                    borderRadius: 2,
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 8px 25px rgba(156, 39, 176, 0.3)',
-                      border: '1px solid rgba(156, 39, 176, 0.4)',
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Box
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: '50%',
-                          background: 'linear-gradient(45deg, #9c27b0, #e91e63)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          mr: 2,
-                          fontSize: '16px',
-                        }}
-                      >
-                        🎯
-                      </Box>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={settings.ai.faceDetection}
-                            onChange={handleSwitchChange('ai', 'faceDetection')}
-                            sx={{
-                              '& .MuiSwitch-switchBase.Mui-checked': {
-                                color: '#9c27b0',
-                              },
-                              '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                backgroundColor: '#9c27b0',
-                              },
-                            }}
-                          />
-                        }
-                        label={
-                          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                            Face Detection
-                          </Typography>
-                        }
-                        sx={{ m: 0 }}
-                      />
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Detect when you're away from your study area and track presence
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <Card 
-                  sx={{ 
-                    backgroundColor: 'rgba(40, 40, 40, 0.9)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(156, 39, 176, 0.2)',
-                    borderRadius: 2,
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 8px 25px rgba(156, 39, 176, 0.3)',
-                      border: '1px solid rgba(156, 39, 176, 0.4)',
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Box
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: '50%',
-                          background: 'linear-gradient(45deg, #9c27b0, #e91e63)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          mr: 2,
-                          fontSize: '16px',
-                        }}
-                      >
-                        🏃
-                      </Box>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={settings.ai.postureAnalysis}
-                            onChange={handleSwitchChange('ai', 'postureAnalysis')}
-                            sx={{
-                              '& .MuiSwitch-switchBase.Mui-checked': {
-                                color: '#9c27b0',
-                              },
-                              '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                backgroundColor: '#9c27b0',
-                              },
-                            }}
-                          />
-                        }
-                        label={
-                          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                            Posture Analysis
-                          </Typography>
-                        }
-                        sx={{ m: 0 }}
-                      />
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Real-time spinal alignment monitoring and posture correction
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>        {/* Save Button */}
-        <Grid item xs={12}>
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<SaveIcon />}
-              onClick={handleSaveSettings}
-              sx={{ 
-                px: 6,
-                py: 2,
-                borderRadius: '25px',
-                background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
-                color: 'white',
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                textTransform: 'none',
-                boxShadow: '0 4px 20px rgba(76, 175, 80, 0.3)',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  background: 'linear-gradient(45deg, #45a049, #5eb55e)',
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 8px 25px rgba(76, 175, 80, 0.4)',
-                },
-                '&:active': {
-                  transform: 'translateY(0px)',
-                },
-                '& .MuiButton-startIcon': {
-                  marginRight: '12px',
-                  fontSize: '24px',
-                },
-              }}
-            >
-              💾 Save Settings
-            </Button>
-          </Box>
-        </Grid>
-      </Grid>
-    </Container>
-  )
-}
-
-export default Settings
+export default Settings;
