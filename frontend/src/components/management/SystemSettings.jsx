@@ -372,7 +372,7 @@ const SystemSettings = () => {
               type="text"
               value={settings.institution.name}
               onChange={(e) => handleNestedInputChange('institution', 'name', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
           <div>
@@ -380,7 +380,7 @@ const SystemSettings = () => {
             <select
               value={settings.institution.academicYear}
               onChange={(e) => handleNestedInputChange('institution', 'academicYear', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white  px-3 py-2"
             >
               <option>2024-2025</option>
               <option>2025-2026</option>
@@ -391,7 +391,7 @@ const SystemSettings = () => {
             <select
               value={settings.institution.timezone}
               onChange={(e) => handleNestedInputChange('institution', 'timezone', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white  px-3 py-2"
             >
               <option>Asia/Kolkata (GMT+5:30)</option>
               <option>America/New_York (GMT-5)</option>
@@ -403,7 +403,7 @@ const SystemSettings = () => {
             <select
               value={settings.institution.language}
               onChange={(e) => handleNestedInputChange('institution', 'language', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white  px-3 py-2"
             >
               <option>English</option>
               <option>Spanish</option>
@@ -415,7 +415,7 @@ const SystemSettings = () => {
             <textarea
               value={settings.institution.address}
               onChange={(e) => handleNestedInputChange('institution', 'address', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white  px-3 py-2"
               rows={2}
             />
           </div>
@@ -425,7 +425,7 @@ const SystemSettings = () => {
               type="tel"
               value={settings.institution.phone}
               onChange={(e) => handleNestedInputChange('institution', 'phone', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white  px-3 py-2"
             />
           </div>
           <div>
@@ -434,7 +434,7 @@ const SystemSettings = () => {
               type="email"
               value={settings.institution.email}
               onChange={(e) => handleNestedInputChange('institution', 'email', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
           <div>
@@ -460,7 +460,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.systemConfig.sessionDuration}
               onChange={(e) => handleNestedInputChange('systemConfig', 'sessionDuration', parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
           <div>
@@ -468,7 +468,7 @@ const SystemSettings = () => {
             <select
               value={settings.systemConfig.dataRetention}
               onChange={(e) => handleNestedInputChange('systemConfig', 'dataRetention', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             >
               <option>1 year</option>
               <option>2 years</option>
@@ -481,7 +481,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.systemConfig.autoDeleteAfter}
               onChange={(e) => handleNestedInputChange('systemConfig', 'autoDeleteAfter', parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
           <div className="flex items-center">
@@ -535,7 +535,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.userManagement.accountPolicies.passwordMinLength}
               onChange={(e) => handleNestedInputChange('userManagement', 'accountPolicies', 'passwordMinLength', parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
           <div>
@@ -543,7 +543,7 @@ const SystemSettings = () => {
             <select
               value={settings.userManagement.accountPolicies.sessionTimeout}
               onChange={(e) => handleNestedInputChange('userManagement', 'accountPolicies', 'sessionTimeout', parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             >
               <option value={30}>30 minutes</option>
               <option value={60}>1 hour</option>
@@ -556,7 +556,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.userManagement.accountPolicies.maxConcurrentSessions}
               onChange={(e) => handleNestedInputChange('userManagement', 'accountPolicies', 'maxConcurrentSessions', parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
           <div>
@@ -565,7 +565,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.userManagement.accountPolicies.forcePasswordChange}
               onChange={(e) => handleNestedInputChange('userManagement', 'accountPolicies', 'forcePasswordChange', parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
           <div className="flex items-center gap-4">
@@ -685,7 +685,7 @@ const SystemSettings = () => {
         <h3 className="text-lg font-semibold mb-4">Resource Alerts</h3>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span>Alert when storage >80%</span>
+            <span>Alert when storage 80%</span>
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -697,19 +697,19 @@ const SystemSettings = () => {
             </label>
           </div>
           <div className="flex items-center justify-between">
-            <span>Alert when CPU >90%</span>
+            <span>Alert when CPU 90%</span>
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={settings.monitoring.resourceAlerts.cpuThreshold > 90}
                 onChange={() => {}}
-                className="w-4 h-4 text-orange-600"
+                className="w-4 h-4 bg-white text-orange-600 "
               />
               <span className="text-sm text-green-600">Enabled</span>
             </label>
           </div>
           <div className="flex items-center justify-between">
-            <span>Alert when API slow (>500ms)</span>
+            <span>Alert when API slow (500ms)</span>
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -838,7 +838,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.privacy.privacyControls.anonymizeAfter}
               onChange={(e) => handleNestedInputChange('privacy', 'privacyControls', 'anonymizeAfter', parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white  px-3 py-2"
             />
           </div>
           <div>
@@ -846,7 +846,7 @@ const SystemSettings = () => {
             <select
               value={settings.privacy.privacyControls.studentVisibility}
               onChange={(e) => handleNestedInputChange('privacy', 'privacyControls', 'studentVisibility', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white  px-3 py-2"
             >
               <option>Teachers + Admin</option>
               <option>Only Admin</option>
@@ -909,7 +909,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.aiAutomation.quizGeneration.autoGenerateBelow}
               onChange={(e) => handleNestedInputChange('aiAutomation', 'quizGeneration', 'autoGenerateBelow', parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
           <div>
@@ -918,7 +918,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.aiAutomation.quizGeneration.defaultQuestions}
               onChange={(e) => handleNestedInputChange('aiAutomation', 'quizGeneration', 'defaultQuestions', parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
           <div>
@@ -926,7 +926,7 @@ const SystemSettings = () => {
             <select
               value={settings.aiAutomation.quizGeneration.defaultDifficulty}
               onChange={(e) => handleNestedInputChange('aiAutomation', 'quizGeneration', 'defaultDifficulty', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             >
               <option>Easy</option>
               <option>Medium</option>
@@ -982,7 +982,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.aiAutomation.predictiveAnalytics.predictMinutes}
               onChange={(e) => handleNestedInputChange('aiAutomation', 'predictiveAnalytics', 'predictMinutes', parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
         </div>
@@ -1001,7 +1001,7 @@ const SystemSettings = () => {
               max="1"
               value={settings.aiAutomation.modelConfig.confidenceThreshold}
               onChange={(e) => handleNestedInputChange('aiAutomation', 'modelConfig', 'confidenceThreshold', parseFloat(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white  px-3 py-2"
             />
           </div>
           <div className="flex items-center justify-between">
@@ -1048,7 +1048,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.engagement.thresholds.high}
               onChange={(e) => handleNestedInputChange('engagement', 'thresholds', 'high', parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
           <div>
@@ -1057,7 +1057,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.engagement.thresholds.medium}
               onChange={(e) => handleNestedInputChange('engagement', 'thresholds', 'medium', parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
           <div>
@@ -1066,7 +1066,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.engagement.thresholds.low}
               onChange={(e) => handleNestedInputChange('engagement', 'thresholds', 'low', parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
         </div>
@@ -1113,7 +1113,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.engagement.alertTriggers.lowEngagement.threshold}
               onChange={(e) => handleNestedInputChange('engagement', 'alertTriggers', 'lowEngagement', { ...settings.engagement.alertTriggers.lowEngagement, threshold: parseInt(e.target.value) })}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
           <div>
@@ -1122,7 +1122,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.engagement.alertTriggers.lowEngagement.duration}
               onChange={(e) => handleNestedInputChange('engagement', 'alertTriggers', 'lowEngagement', { ...settings.engagement.alertTriggers.lowEngagement, duration: parseInt(e.target.value) })}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
           <div>
@@ -1131,7 +1131,7 @@ const SystemSettings = () => {
               type="number"
               value={settings.engagement.alertTriggers.criticalAlert.threshold}
               onChange={(e) => handleNestedInputChange('engagement', 'alertTriggers', 'criticalAlert', { ...settings.engagement.alertTriggers.criticalAlert, threshold: parseInt(e.target.value) })}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
             />
           </div>
         </div>
@@ -1180,7 +1180,7 @@ const SystemSettings = () => {
                   <select
                     value={settings.backup.frequency}
                     onChange={(e) => handleNestedInputChange('backup', 'frequency', e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md bg-white px-3 py-2"
                   >
                     <option>Daily at 2 AM</option>
                     <option>Weekly</option>
@@ -1193,7 +1193,7 @@ const SystemSettings = () => {
                     type="number"
                     value={settings.backup.retention}
                     onChange={(e) => handleNestedInputChange('backup', 'retention', parseInt(e.target.value))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md  bg-white px-3 py-2"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -1227,7 +1227,7 @@ const SystemSettings = () => {
                   <select
                     value={settings.security.twoFactorAuth}
                     onChange={(e) => handleNestedInputChange('security', 'twoFactorAuth', e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md  bg-white px-3 py-2"
                   >
                     <option>Admin + Teachers</option>
                     <option>Admin only</option>
@@ -1240,7 +1240,7 @@ const SystemSettings = () => {
                     type="number"
                     value={settings.security.maxFailedAttempts}
                     onChange={(e) => handleNestedInputChange('security', 'maxFailedAttempts', parseInt(e.target.value))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md  bg-white px-3 py-2"
                   />
                 </div>
                 <div>
@@ -1249,7 +1249,7 @@ const SystemSettings = () => {
                     type="number"
                     value={settings.security.lockoutDuration}
                     onChange={(e) => handleNestedInputChange('security', 'lockoutDuration', parseInt(e.target.value))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md  bg-white px-3 py-2"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -1299,7 +1299,7 @@ const SystemSettings = () => {
                   className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
                     activeSection === item.id
                       ? 'bg-orange-100 text-orange-700 border-l-4 border-orange-600'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      : 'bg-white text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -1321,7 +1321,7 @@ const SystemSettings = () => {
             <div className="mt-8 flex items-center justify-between pt-6 border-t border-gray-200">
               <button
                 onClick={handleReset}
-                className="flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                className="flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-md bg-white hover:bg-gray-100"
               >
                 <RotateCcw className="w-4 h-4" />
                 Reset to Defaults
