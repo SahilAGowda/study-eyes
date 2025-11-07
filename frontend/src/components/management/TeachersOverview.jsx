@@ -280,7 +280,7 @@ const TeachersOverview = () => {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Meeting Target (>75%)</p>
+                <p className="text-sm text-gray-600">Meeting Target ( &gt; 75% )</p>
                 <p className="text-2xl font-bold text-gray-900">35</p>
                 <p className="text-sm text-green-600">83%</p>
               </div>
