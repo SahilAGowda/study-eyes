@@ -22,7 +22,7 @@ from config.config import Config
 
 # Import routes
 from routes.auth_routes import auth_bp
-from routes.session_routes import session_bp
+# session_routes removed - reserved for new StudyEye implementation
 from routes.analytics_routes import analytics_bp
 from routes.user_routes import user_bp
 
@@ -51,12 +51,16 @@ def create_app(config_name='development'):
     app.logger.info(f"Starting Study Eyes application in {config_name} mode")
     
     # Initialize extensions
-    CORS(app, origins=['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5000'])  # Frontend URLs
+    CORS(app, 
+         resources={r"/api/*": {"origins": ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:5000"]}},
+         supports_credentials=True,
+         allow_headers=["Content-Type", "Authorization"],
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
     db.init_app(app)
     migrate = Migrate(app, db)
     
-    # Initialize SocketIO
-    socketio = SocketIO(app, cors_allowed_origins=['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5000'], async_mode='threading')
+    # SocketIO removed - reserved for new StudyEye implementation
+    # socketio = SocketIO(app, cors_allowed_origins=['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5000'], async_mode='threading')
     
     # JWT Configuration
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'study-eyes-secret-key')
@@ -67,13 +71,11 @@ def create_app(config_name='development'):
     setup_error_handlers(app)
       # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(session_bp, url_prefix='/api/sessions')
+    # session_bp removed - reserved for new StudyEye implementation
     app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
     app.register_blueprint(user_bp, url_prefix='/api/users')
     
-    # Import and initialize WebSocket service (after app is fully configured)
-    from services.websocket_service import init_websocket_handlers
-    init_websocket_handlers(socketio)
+    # WebSocket service removed - reserved for new StudyEye implementation
     
     # Health check endpoint
     @app.route('/api/health')
@@ -86,15 +88,15 @@ def create_app(config_name='development'):
         })
     
     app.logger.info("Application setup completed successfully")
-    return app, socketio
+    return app
 
 # Create the application instance
-app, socketio = create_app()
+app = create_app()
 
 if __name__ == '__main__':
     with app.app_context():
         # Create database tables
         db.create_all()
     
-    # Run the application with SocketIO
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    # Run the application
+    app.run(debug=True, host='0.0.0.0', port=5000)

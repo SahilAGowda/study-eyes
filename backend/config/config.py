@@ -18,6 +18,9 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'study-eyes-dev-secret-key'
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'study-eyes-jwt-secret'
     
+    # Frontend URL for email links
+    FRONTEND_URL = os.environ.get('FRONTEND_URL') or 'http://localhost:5173'
+    
     # File upload settings
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploads')

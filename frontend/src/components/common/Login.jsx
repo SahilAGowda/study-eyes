@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom'
 import {
   Container,
   Paper,
@@ -44,11 +44,22 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    e.stopPropagation()
+    
     setLoading(true)
     setError('')
 
     try {
-      const { user, token } = await apiService.login(formData.email, formData.password)
+      console.log('Attempting login with:', formData.email)
+      const response = await apiService.login(formData.email, formData.password)
+      console.log('Login response:', response)
+      
+      const { user, token, access_token } = response
+      const authToken = token || access_token
+      
+      if (!authToken) {
+        throw new Error('No authentication token received')
+      }
       
       console.log('Login response - user:', user)
       console.log('Login response - user.role:', user.role)
@@ -72,53 +83,69 @@ const Login = () => {
       // Prepare user data with role (use portal role if backend doesn't provide one)
       const userData = {
         ...user,
-        token,
+        token: authToken,
         role: userRole
       }
+      
+      console.log('Calling login with userData:', userData)
       
       // Login will automatically redirect based on role
       login(userData, location.state?.from?.pathname)
     } catch (error) {
-      setError(error.message || 'Login failed. Please check your credentials.')
       console.error('Login error:', error)
-    } finally {
+      const errorMessage = error.response?.data?.error || error.message || 'Login failed. Please check your credentials.'
+      setError(errorMessage)
       setLoading(false)
     }
   }
 
-  const handleDemoLogin = async () => {
+  const handleDemoLogin = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
     setLoading(true)
     setError('')
 
     try {
       // Try to create a demo account and login
-      await apiService.register('demo', 'demo@example.com', 'demo123')
-      const { user, token } = await apiService.login('demo@example.com', 'demo123')
+      await apiService.register({
+        username: 'demo',
+        email: 'demo@example.com',
+        password: 'Demo123!',
+        first_name: 'Demo',
+        last_name: 'User',
+        role: role
+      })
+      const response = await apiService.login('demo@example.com', 'Demo123!')
+      const { user, token, access_token } = response
+      const authToken = token || access_token
       
       const userData = {
         ...user,
-        token,
-        role: user.role || 'student'
+        token: authToken,
+        role: user.role || role
       }
       
       login(userData)
     } catch (e) {
       // If demo account already exists, just try to login
       try {
-        const { user, token } = await apiService.login('demo@example.com', 'demo123')
+        const response = await apiService.login('demo@example.com', 'Demo123!')
+        const { user, token, access_token } = response
+        const authToken = token || access_token
         
         const userData = {
           ...user,
-          token,
-          role: user.role || 'student'
+          token: authToken,
+          role: user.role || role
         }
         
         login(userData)
       } catch (loginErr) {
+        console.error('Demo login error:', loginErr)
         setError('Demo login failed. Please create an account.')
+        setLoading(false)
       }
-    } finally {
-      setLoading(false)
     }
   }
   return (
@@ -386,7 +413,8 @@ const Login = () => {
               >
                 Don't have an account?{' '}
                 <Link 
-                  href={`/register?role=${role}`} 
+                  component={RouterLink}
+                  to={`/register?role=${role}`} 
                   variant="body1"
                   sx={{
                     color: '#2196f3',

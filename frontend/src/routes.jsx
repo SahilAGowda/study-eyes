@@ -17,15 +17,16 @@ import {
 
 // Student Components
 import StudentDashboard from './components/student/Dashboard'
-import StudySession from './components/student/StudySession'
 import StudentAnalytics from './components/student/Analytics'
 import StudentSettings from './components/student/Settings'
-import CameraTest from './components/student/CameraTest'
 import FocusTest from './components/student/FocusTest'
 import MyEngagement from './components/student/MyEngagement'
 import Notifications from './components/student/Notifications'
 import Quizzes from './components/student/Quizzes'
 import Reports from './components/student/Reports'
+
+// StudyEye Components
+import { StudyEyeDashboard } from './studyeye/components'
 
 // Teacher Components
 import TeacherDashboard from './components/teacher/Dashboard'
@@ -56,11 +57,9 @@ import Register from './components/common/Register'
 export const roleRoutes = {
   student: [
     { path: 'dashboard', element: StudentDashboard, requiresAuth: true },
-    { path: 'study', element: StudySession, requiresAuth: true },
-    { path: 'study-session', element: StudySession, requiresAuth: true },
+    { path: 'study-session', element: StudyEyeDashboard, requiresAuth: true },
     { path: 'analytics', element: StudentAnalytics, requiresAuth: true },
     { path: 'settings', element: StudentSettings, requiresAuth: true },
-    { path: 'camera-test', element: CameraTest, requiresAuth: true },
     { path: 'focus-test', element: FocusTest, requiresAuth: true },
     { path: 'engagement', element: MyEngagement, requiresAuth: true },
     { path: 'notifications', element: Notifications, requiresAuth: true },
@@ -117,7 +116,15 @@ export const getDefaultRoute = (role) => {
  */
 export const hasRoleAccess = (userRole, requiredRole) => {
   if (!userRole || !requiredRole) return false
-  return userRole.toLowerCase() === requiredRole.toLowerCase()
+  const normalizedUserRole = userRole.toLowerCase()
+  const normalizedRequiredRole = requiredRole.toLowerCase()
+  
+  // Admin and management roles can access management routes
+  if (normalizedRequiredRole === 'management' && (normalizedUserRole === 'admin' || normalizedUserRole === 'management')) {
+    return true
+  }
+  
+  return normalizedUserRole === normalizedRequiredRole
 }
 
 /**
@@ -127,8 +134,8 @@ export const hasRoleAccess = (userRole, requiredRole) => {
 export const roleMenuItems = {
   student: [
     { path: '/student/dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
+    { path: '/student/study-session', label: 'Study Session', icon: <StudyIcon /> },
     { path: '/student/engagement', label: 'My Engagement', icon: <EngagementIcon /> },
-    { path: '/student/study', label: 'Study Session', icon: <StudyIcon /> },
     { path: '/student/quizzes', label: 'Quizzes', icon: <QuizIcon /> },
     { path: '/student/reports', label: 'Reports', icon: <ReportsIcon /> },
     { path: '/student/analytics', label: 'Analytics', icon: <AnalyticsIcon /> },

@@ -37,17 +37,17 @@ import ChatBot from '../common/ChatBot'
 
 const Dashboard = ({ isStudying, setIsStudying }) => {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const [loading, setLoading] = useState(true)
   const [chatOpen, setChatOpen] = useState(false)
 
   useEffect(() => {
-    if (!apiService.isAuthenticated()) {
+    if (!isAuthenticated) {
       navigate('/login')
     } else {
       setLoading(false)
     }
-  }, [navigate])
+  }, [navigate, isAuthenticated])
 
   // Helper function to convert hex to rgba
   const hexToRgba = (hex, alpha) => {
@@ -434,9 +434,9 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
           </Fade>
         </Grid>
 
-        {/* Goals Column */}
+        {/* Goals Column - REDESIGNED for consistency */}
         <Grid item xs={12} md={6}>
-          {/* Enhanced Goals Progress */}
+          {/* Enhanced Goals Progress - Matches Recent Sessions styling */}
           <Fade in timeout={1000}>
             <Paper sx={{ 
               p: 4, 
@@ -444,75 +444,138 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
               background: 'linear-gradient(135deg, rgba(247, 115, 22, 0.15), rgba(234, 88, 12, 0.05))',
               backdropFilter: 'blur(20px)',
               border: '1px solid rgba(247, 115, 22, 0.3)',
-              boxShadow: 'none'
+              boxShadow: 'none',
+              height: '100%', // Match height with Recent Sessions
+              display: 'flex',
+              flexDirection: 'column'
             }}>
-              <Typography 
-                variant="h6" 
-                sx={{
-                  fontWeight: 600,
-                  background: 'linear-gradient(45deg, #F97316, #EA580C)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  mb: 3,
-                }}
-              >
-                🎯 Your Goals
-              </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {goals.map((goal, index) => {
-                const progress = (goal.current / goal.target) * 100
-                const gradients = [
-                  'linear-gradient(45deg, #F97316, #EA580C)',
-                  'linear-gradient(45deg, #8B5CF6, #7C3AED)',
-                  'linear-gradient(45deg, #4caf50, #66bb6a)'
-                ]
-                return (
-                  <Card 
-                    key={index}
-                    sx={{ 
-                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
-                      backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      borderRadius: '16px',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-5px)',
-                        boxShadow: '0 15px 35px rgba(247, 115, 22, 0.2)',
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.05rem' }}>
-                          {goal.title}
+              {/* Header - Consistent with Recent Sessions */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Typography 
+                  variant="h6" 
+                  sx={{
+                    fontWeight: 600,
+                    background: 'linear-gradient(45deg, #F97316, #EA580C)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  🎯 Your Goals
+                </Typography>
+                <Button
+                  endIcon={<ArrowIcon />}
+                  sx={{ 
+                    textTransform: 'none', 
+                    fontWeight: 600,
+                    color: '#F97316',
+                    fontSize: '0.875rem',
+                    '&:hover': {
+                      bgcolor: 'rgba(247, 115, 22, 0.08)'
+                    }
+                  }}
+                  onClick={() => navigate('/student/reports')}
+                >
+                  View All
+                </Button>
+              </Box>
+
+              {/* Goals Cards - Consistent spacing and styling */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+                {goals.map((goal, index) => {
+                  const progress = (goal.current / goal.target) * 100
+                  const gradients = [
+                    'linear-gradient(45deg, #F97316, #EA580C)',
+                    'linear-gradient(45deg, #8B5CF6, #7C3AED)',
+                    'linear-gradient(45deg, #4caf50, #66bb6a)'
+                  ]
+                  const colors = ['#F97316', '#8B5CF6', '#4caf50']
+                  
+                  return (
+                    <Card 
+                      key={index}
+                      sx={{ 
+                        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '16px',
+                        transition: 'all 0.3s ease',
+                        flex: 1, // Equal height distribution
+                        display: 'flex',
+                        flexDirection: 'column',
+                        '&:hover': {
+                          transform: 'translateX(8px)', // Match Recent Sessions hover
+                          boxShadow: `0 8px 25px ${hexToRgba(colors[index], 0.25)}`,
+                          borderColor: `${hexToRgba(colors[index], 0.4)}`,
+                        },
+                      }}
+                    >
+                      <CardContent sx={{ py: 3, px: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        {/* Title and Value Row - Consistent alignment */}
+                        <Box sx={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center', 
+                          mb: 2 
+                        }}>
+                          <Typography 
+                            variant="subtitle1" 
+                            sx={{ 
+                              fontWeight: 700, 
+                              fontSize: '1rem',
+                              color: 'text.primary'
+                            }}
+                          >
+                            {goal.title}
+                          </Typography>
+                          <Typography 
+                            variant="body1" 
+                            sx={{ 
+                              fontWeight: 700, 
+                              color: colors[index], 
+                              fontSize: '0.95rem',
+                              whiteSpace: 'nowrap',
+                              ml: 2
+                            }}
+                          >
+                            {goal.current}/{goal.target} {goal.unit}
+                          </Typography>
+                        </Box>
+
+                        {/* Progress Bar - Consistent height and styling */}
+                        <Box sx={{ mb: 1.5 }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={progress}
+                            sx={{
+                              height: 10, // Consistent height
+                              borderRadius: 5,
+                              backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                              '& .MuiLinearProgress-bar': {
+                                background: gradients[index],
+                                borderRadius: 5,
+                                boxShadow: `0 0 12px ${hexToRgba(colors[index], 0.4)}`,
+                              }
+                            }}
+                          />
+                        </Box>
+
+                        {/* Progress Percentage - Consistent typography */}
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            fontWeight: 600, 
+                            fontSize: '0.875rem',
+                            color: 'text.secondary'
+                          }}
+                        >
+                          {progress.toFixed(0)}% Complete
                         </Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 700, color: '#F97316', fontSize: '0.95rem' }}>
-                          {goal.current}/{goal.target} {goal.unit}
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={progress}
-                        sx={{
-                          height: 12,
-                          borderRadius: 6,
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                          '& .MuiLinearProgress-bar': {
-                            background: gradients[index],
-                            borderRadius: 6,
-                            boxShadow: '0 0 15px rgba(247, 115, 22, 0.4)',
-                          }
-                        }}
-                      />
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mt: 1.5, fontSize: '0.85rem' }}>
-                        {progress.toFixed(0)}% Complete
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </Box>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </Box>
             </Paper>
           </Fade>
         </Grid>

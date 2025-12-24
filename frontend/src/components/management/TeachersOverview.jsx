@@ -810,7 +810,7 @@ const TeachersOverview = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <ChevronRight className="w-4 h-4 text-blue-500" />
-                  <span>Consider reducing workload for teachers with >100 students</span>
+                  <span>Consider reducing workload for teachers with &gt;100 students</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <ChevronRight className="w-4 h-4 text-blue-500" />
