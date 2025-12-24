@@ -1,12 +1,21 @@
 /**
  * Multi-Student Overlay Component
  * 
- * Renders real-time engagement overlays for multiple students with bounding boxes,
- * state indicators, engagement scores, attention targets, and confidence levels.
+ * PURE DATA-DRIVEN RENDERER - No logic computation, only visualization
+ * 
+ * Renders real-time engagement overlays for multiple students:
+ * - Bounding boxes with engagement-based coloring
+ * - Semantic label blocks showing:
+ *   - Behavior State (Active Listening, Passive Listening, etc.)
+ *   - Engagement Score (0-100)
+ *   - Attention Target (Teacher, Board, Notes, Peer, None)
+ *   - Confidence Level (Low / Medium / High)
+ * 
+ * All data comes from StudentState objects - UI does NOT compute or guess
  */
 
-import React, { useRef, useEffect } from 'react';
-import type { ClassroomState, StudentState } from '../types/studentState';
+import React, { useRef, useEffect, useCallback } from 'react';
+import type { ClassroomState, StudentState, PrimaryBehavior } from '../types/studentState';
 import type { BehaviorAnalysis } from '../services/temporalBehaviorEngine';
 
 interface MultiStudentOverlayProps {
@@ -20,21 +29,16 @@ interface MultiStudentOverlayProps {
   anonymizeStudents?: boolean;
 }
 
-interface StudentOverlayData {
-  student: StudentState;
-  analysis?: BehaviorAnalysis;
-  displayName: string;
-  color: string;
-}
-
-const ENGAGEMENT_COLORS = {
+// Color schemes based on engagement level
+const ENGAGEMENT_COLORS: Record<string, string> = {
   high: '#22c55e',      // Green
   medium: '#f59e0b',    // Amber
   low: '#ef4444',       // Red
   disengaged: '#6b7280' // Gray
 };
 
-const BEHAVIOR_COLORS = {
+// Color schemes based on behavior state
+const BEHAVIOR_COLORS: Record<PrimaryBehavior, string> = {
   active_listening: '#10b981',    // Emerald
   passive_listening: '#3b82f6',   // Blue
   cognitive_load: '#f59e0b',      // Amber
@@ -44,6 +48,29 @@ const BEHAVIOR_COLORS = {
   distracted: '#ef4444',          // Red
   disengaged: '#6b7280',          // Gray
   technology_use: '#dc2626'       // Dark red
+};
+
+// Format behavior name for display
+const formatBehaviorName = (behavior: PrimaryBehavior): string => {
+  return behavior
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+// Format attention target for display
+const formatAttentionTarget = (target: string): string => {
+  return target
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+// Get confidence level label
+const getConfidenceLabel = (confidence: number): string => {
+  if (confidence >= 0.7) return 'High';
+  if (confidence >= 0.4) return 'Medium';
+  return 'Low';
 };
 
 export const MultiStudentOverlay: React.FC<MultiStudentOverlayProps> = ({
@@ -58,7 +85,7 @@ export const MultiStudentOverlay: React.FC<MultiStudentOverlayProps> = ({
 }) => {
   const animationFrameRef = useRef<number>(0);
 
-  useEffect(() => {
+  const renderFrame = useCallback(() => {
     if (!canvasRef.current || !videoElement || !classroomState) {
       return;
     }
@@ -67,94 +94,62 @@ export const MultiStudentOverlay: React.FC<MultiStudentOverlayProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const renderOverlay = () => {
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Sync canvas size with video
+    if (canvas.width !== videoElement.videoWidth || canvas.height !== videoElement.videoHeight) {
+      canvas.width = videoElement.videoWidth || 1280;
+      canvas.height = videoElement.videoHeight || 720;
+    }
 
-      // Set canvas size to match video
-      if (canvas.width !== videoElement.videoWidth || canvas.height !== videoElement.videoHeight) {
-        canvas.width = videoElement.videoWidth;
-        canvas.height = videoElement.videoHeight;
-      }
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Prepare student data for rendering
-      const studentOverlays = prepareStudentOverlays(classroomState, behaviorAnalyses, anonymizeStudents);
+    // Render each active student
+    let studentIndex = 0;
+    for (const [studentId, student] of classroomState.students) {
+      if (!student.isActive) continue;
 
-      // Render each student overlay
-      studentOverlays.forEach((overlay, index) => {
-        renderStudentOverlay(ctx, overlay, index, {
-          showConfidence,
-          showAttentionTarget,
-          showBehaviorHistory
-        });
+      const analysis = behaviorAnalyses?.get(studentId);
+      const displayName = anonymizeStudents 
+        ? `Student ${studentIndex + 1}` 
+        : `S${studentIndex + 1}`;
+
+      renderStudentOverlay(ctx, student, analysis, displayName, studentIndex, {
+        showConfidence,
+        showAttentionTarget,
+        showBehaviorHistory,
       });
 
-      // Render classroom summary
-      renderClassroomSummary(ctx, classroomState, canvas.width, canvas.height);
+      studentIndex++;
+    }
 
-      animationFrameRef.current = requestAnimationFrame(renderOverlay);
-    };
+    // Render classroom summary panel
+    renderClassroomSummary(ctx, classroomState, canvas.width);
 
-    renderOverlay();
+    // Schedule next frame
+    animationFrameRef.current = requestAnimationFrame(renderFrame);
+  }, [videoElement, classroomState, behaviorAnalyses, canvasRef, showConfidence, showAttentionTarget, showBehaviorHistory, anonymizeStudents]);
 
+  useEffect(() => {
+    renderFrame();
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [videoElement, classroomState, behaviorAnalyses, showConfidence, showAttentionTarget, showBehaviorHistory, anonymizeStudents]);
+  }, [renderFrame]);
 
-  return null; // This component only renders to canvas
+  return null; // Pure canvas renderer
 };
 
 /**
- * Prepare student data for overlay rendering
- */
-function prepareStudentOverlays(
-  classroomState: ClassroomState,
-  behaviorAnalyses: Map<string, BehaviorAnalysis> | null,
-  anonymizeStudents: boolean
-): StudentOverlayData[] {
-  const overlays: StudentOverlayData[] = [];
-  let studentIndex = 0;
-
-  for (const [studentId, student] of classroomState.students) {
-    if (!student.isActive) continue;
-
-    const analysis = behaviorAnalyses?.get(studentId);
-    const displayName = anonymizeStudents ? `Student ${studentIndex + 1}` : `S${studentIndex + 1}`;
-    const color = generateStudentColor(studentIndex);
-
-    overlays.push({
-      student,
-      analysis,
-      displayName,
-      color
-    });
-
-    studentIndex++;
-  }
-
-  return overlays;
-}
-
-/**
- * Generate consistent color for student based on index
- */
-function generateStudentColor(index: number): string {
-  const colors = [
-    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
-    '#06b6d4', '#f97316', '#84cc16', '#ec4899', '#6366f1'
-  ];
-  return colors[index % colors.length];
-}
-
-/**
  * Render individual student overlay
+ * ALL DATA FROM StudentState - NO COMPUTATION
  */
 function renderStudentOverlay(
   ctx: CanvasRenderingContext2D,
-  overlay: StudentOverlayData,
+  student: StudentState,
+  analysis: BehaviorAnalysis | undefined,
+  displayName: string,
   index: number,
   options: {
     showConfidence: boolean;
@@ -162,326 +157,364 @@ function renderStudentOverlay(
     showBehaviorHistory: boolean;
   }
 ): void {
-  const { student, analysis, displayName, color } = overlay;
-  const { boundingBox, engagement, behavior, attention } = student;
+  const { boundingBox, engagement, behavior, attention, emotion, trackingConfidence } = student;
+  const { x, y, width, height } = boundingBox;
 
-  // Calculate overlay position
-  const x = boundingBox.x;
-  const y = boundingBox.y;
-  const width = boundingBox.width;
-  const height = boundingBox.height;
+  // Get colors from state
+  const engagementColor = ENGAGEMENT_COLORS[engagement.level] || ENGAGEMENT_COLORS.medium;
+  const behaviorColor = BEHAVIOR_COLORS[behavior.primaryBehavior] || '#6b7280';
 
-  // Draw bounding box
-  drawBoundingBox(ctx, x, y, width, height, engagement.level, color);
+  // 1. Draw bounding box with engagement-based color
+  drawBoundingBox(ctx, x, y, width, height, engagementColor);
 
-  // Draw student ID label
-  drawStudentLabel(ctx, x, y, displayName, color);
+  // 2. Draw student ID label
+  drawLabel(ctx, x, y - 25, displayName, engagementColor);
 
-  // Draw engagement score
-  drawEngagementScore(ctx, x + width + 10, y, engagement);
+  // 3. Draw semantic label block (right side of bounding box)
+  const labelX = x + width + 8;
+  const labelY = y;
+  
+  drawSemanticLabelBlock(ctx, labelX, labelY, {
+    state: behavior.primaryBehavior,
+    stateColor: behaviorColor,
+    engagementScore: engagement.score,
+    engagementLevel: engagement.level,
+    engagementTrend: engagement.trend,
+    attentionTarget: attention.target,
+    attentionConfidence: attention.confidence,
+    overallConfidence: behavior.overallConfidence,
+    emotion: emotion.primaryEmotion,
+    showAttention: options.showAttentionTarget,
+    showConfidence: options.showConfidence,
+  });
 
-  // Draw behavior state
-  drawBehaviorState(ctx, x + width + 10, y + 30, behavior, analysis);
-
-  // Draw attention target (optional)
-  if (options.showAttentionTarget) {
-    drawAttentionTarget(ctx, x + width + 10, y + 60, attention);
-  }
-
-  // Draw confidence indicator (optional)
+  // 4. Draw confidence bar (bottom of bounding box)
   if (options.showConfidence) {
-    drawConfidenceIndicator(ctx, x, y + height + 5, student.trackingConfidence, behavior.overallConfidence);
+    drawConfidenceBar(ctx, x, y + height + 4, width, trackingConfidence, behavior.overallConfidence);
   }
 
-  // Draw behavior history (optional)
+  // 5. Draw behavior history timeline (optional)
   if (options.showBehaviorHistory && student.history.behaviors.length > 0) {
-    drawBehaviorHistory(ctx, x, y + height + 25, student.history.behaviors.slice(-10));
+    drawBehaviorTimeline(ctx, x, y + height + 20, width, student.history.behaviors.slice(-20));
   }
 
-  // Draw gaze indicators
-  if (attention.gazePoint) {
-    drawGazeIndicator(ctx, attention.gazePoint.x, attention.gazePoint.y, attention.confidence);
-  }
+  // 6. Draw engagement trend indicator
+  drawTrendIndicator(ctx, x + width - 20, y + 5, engagement.trend);
 }
 
 /**
- * Draw bounding box with engagement-based styling
+ * Draw bounding box with corner accents
  */
 function drawBoundingBox(
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  engagementLevel: string,
-  studentColor: string
+  x: number, y: number, width: number, height: number,
+  color: string
 ): void {
-  const color = ENGAGEMENT_COLORS[engagementLevel as keyof typeof ENGAGEMENT_COLORS] || studentColor;
-  
+  // Main box
   ctx.strokeStyle = color;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2;
   ctx.setLineDash([]);
   ctx.strokeRect(x, y, width, height);
 
-  // Add corner indicators
-  const cornerSize = 15;
+  // Corner accents
+  const cornerSize = Math.min(15, width * 0.15, height * 0.15);
   ctx.fillStyle = color;
-  
-  // Top-left corner
-  ctx.fillRect(x, y, cornerSize, 3);
-  ctx.fillRect(x, y, 3, cornerSize);
-  
-  // Top-right corner
-  ctx.fillRect(x + width - cornerSize, y, cornerSize, 3);
-  ctx.fillRect(x + width - 3, y, 3, cornerSize);
-  
-  // Bottom-left corner
-  ctx.fillRect(x, y + height - 3, cornerSize, 3);
-  ctx.fillRect(x, y + height - cornerSize, 3, cornerSize);
-  
-  // Bottom-right corner
-  ctx.fillRect(x + width - cornerSize, y + height - 3, cornerSize, 3);
-  ctx.fillRect(x + width - 3, y + height - cornerSize, 3, cornerSize);
+  ctx.lineWidth = 3;
+
+  // Top-left
+  ctx.beginPath();
+  ctx.moveTo(x, y + cornerSize);
+  ctx.lineTo(x, y);
+  ctx.lineTo(x + cornerSize, y);
+  ctx.stroke();
+
+  // Top-right
+  ctx.beginPath();
+  ctx.moveTo(x + width - cornerSize, y);
+  ctx.lineTo(x + width, y);
+  ctx.lineTo(x + width, y + cornerSize);
+  ctx.stroke();
+
+  // Bottom-left
+  ctx.beginPath();
+  ctx.moveTo(x, y + height - cornerSize);
+  ctx.lineTo(x, y + height);
+  ctx.lineTo(x + cornerSize, y + height);
+  ctx.stroke();
+
+  // Bottom-right
+  ctx.beginPath();
+  ctx.moveTo(x + width - cornerSize, y + height);
+  ctx.lineTo(x + width, y + height);
+  ctx.lineTo(x + width, y + height - cornerSize);
+  ctx.stroke();
 }
 
 /**
- * Draw student identification label
+ * Draw student label
  */
-function drawStudentLabel(
+function drawLabel(
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  displayName: string,
-  color: string
+  x: number, y: number,
+  text: string, color: string
 ): void {
-  const labelY = y - 5;
-  
+  const padding = 4;
+  ctx.font = 'bold 12px Arial';
+  const textWidth = ctx.measureText(text).width;
+
   // Background
   ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.fillRect(x, labelY - 20, displayName.length * 8 + 10, 25);
-  
+  ctx.fillRect(x, y, textWidth + padding * 2, 20);
+
   // Text
   ctx.fillStyle = color;
-  ctx.font = 'bold 14px Arial';
-  ctx.fillText(displayName, x + 5, labelY - 5);
+  ctx.fillText(text, x + padding, y + 14);
 }
 
 /**
- * Draw engagement score indicator
+ * Draw semantic label block showing all engagement metrics
+ * This is the main information display per student
  */
-function drawEngagementScore(
+function drawSemanticLabelBlock(
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  engagement: StudentState['engagement']
+  x: number, y: number,
+  data: {
+    state: PrimaryBehavior;
+    stateColor: string;
+    engagementScore: number;
+    engagementLevel: string;
+    engagementTrend: string;
+    attentionTarget: string;
+    attentionConfidence: number;
+    overallConfidence: number;
+    emotion: string;
+    showAttention: boolean;
+    showConfidence: boolean;
+  }
 ): void {
-  const score = Math.round(engagement.score);
-  const level = engagement.level;
-  const color = ENGAGEMENT_COLORS[level];
-  
-  // Background
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.fillRect(x, y, 120, 25);
+  const lineHeight = 18;
+  const blockWidth = 160;
+  let currentY = y;
+
+  // Background panel
+  const totalLines = 2 + (data.showAttention ? 1 : 0) + (data.showConfidence ? 1 : 0);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+  ctx.fillRect(x, y, blockWidth, totalLines * lineHeight + 8);
+
+  // Left accent bar (behavior color)
+  ctx.fillStyle = data.stateColor;
+  ctx.fillRect(x, y, 4, totalLines * lineHeight + 8);
+
+  const textX = x + 10;
+  currentY += 14;
+
+  // Line 1: Behavior State
+  ctx.font = 'bold 11px Arial';
+  ctx.fillStyle = data.stateColor;
+  ctx.fillText(`State: ${formatBehaviorName(data.state)}`, textX, currentY);
+  currentY += lineHeight;
+
+  // Line 2: Engagement Score with bar
+  const engColor = ENGAGEMENT_COLORS[data.engagementLevel] || '#f59e0b';
+  ctx.font = '11px Arial';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(`Eng: `, textX, currentY);
   
   // Score bar
-  const barWidth = (score / 100) * 100;
-  ctx.fillStyle = color;
-  ctx.fillRect(x + 2, y + 2, barWidth, 21);
+  const barX = textX + 28;
+  const barWidth = 60;
+  const barHeight = 8;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.fillRect(barX, currentY - 8, barWidth, barHeight);
+  ctx.fillStyle = engColor;
+  ctx.fillRect(barX, currentY - 8, (data.engagementScore / 100) * barWidth, barHeight);
   
-  // Text
-  ctx.fillStyle = 'white';
-  ctx.font = 'bold 12px Arial';
-  ctx.fillText(`${score}% ${level.toUpperCase()}`, x + 5, y + 16);
+  // Score text
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(`${data.engagementScore}%`, barX + barWidth + 4, currentY);
+  currentY += lineHeight;
+
+  // Line 3: Attention Target (optional)
+  if (data.showAttention) {
+    ctx.fillStyle = '#a0a0a0';
+    ctx.font = '10px Arial';
+    ctx.fillText(`Attn: ${formatAttentionTarget(data.attentionTarget)}`, textX, currentY);
+    currentY += lineHeight;
+  }
+
+  // Line 4: Confidence Level (optional)
+  if (data.showConfidence) {
+    const confLabel = getConfidenceLabel(data.overallConfidence);
+    const confColor = data.overallConfidence >= 0.7 ? '#22c55e' : 
+                      data.overallConfidence >= 0.4 ? '#f59e0b' : '#ef4444';
+    ctx.fillStyle = confColor;
+    ctx.font = '10px Arial';
+    ctx.fillText(`Conf: ${confLabel}`, textX, currentY);
+  }
 }
 
 /**
- * Draw behavior state indicator
+ * Draw confidence bar
  */
-function drawBehaviorState(
+function drawConfidenceBar(
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  behavior: StudentState['behavior'],
-  analysis?: BehaviorAnalysis
+  x: number, y: number, width: number,
+  trackingConf: number, behaviorConf: number
 ): void {
-  const behaviorName = analysis?.currentBehavior.pattern.name || behavior.primaryBehavior;
-  const confidence = Math.round((analysis?.currentBehavior.confidence || behavior.overallConfidence) * 100);
-  const color = BEHAVIOR_COLORS[behaviorName as keyof typeof BEHAVIOR_COLORS] || '#6b7280';
-  
-  // Format behavior name for display
-  const displayName = behaviorName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  
+  const barHeight = 4;
+  const halfWidth = width / 2 - 2;
+
   // Background
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.fillRect(x, y, Math.max(displayName.length * 7 + 20, 120), 25);
-  
-  // Behavior indicator
-  ctx.fillStyle = color;
-  ctx.fillRect(x + 2, y + 2, 4, 21);
-  
-  // Text
-  ctx.fillStyle = 'white';
-  ctx.font = '12px Arial';
-  ctx.fillText(`${displayName} (${confidence}%)`, x + 10, y + 16);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  ctx.fillRect(x, y, width, barHeight * 2 + 2);
+
+  // Tracking confidence bar
+  const trackColor = trackingConf >= 0.7 ? '#22c55e' : trackingConf >= 0.4 ? '#f59e0b' : '#ef4444';
+  ctx.fillStyle = trackColor;
+  ctx.fillRect(x + 1, y + 1, trackingConf * halfWidth, barHeight);
+
+  // Behavior confidence bar
+  const behavColor = behaviorConf >= 0.7 ? '#22c55e' : behaviorConf >= 0.4 ? '#f59e0b' : '#ef4444';
+  ctx.fillStyle = behavColor;
+  ctx.fillRect(x + halfWidth + 3, y + 1, behaviorConf * halfWidth, barHeight);
+
+  // Labels
+  ctx.fillStyle = '#888888';
+  ctx.font = '8px Arial';
+  ctx.fillText('T', x + 2, y + barHeight * 2);
+  ctx.fillText('B', x + halfWidth + 4, y + barHeight * 2);
 }
 
 /**
- * Draw attention target indicator
+ * Draw trend indicator arrow
  */
-function drawAttentionTarget(
+function drawTrendIndicator(
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  attention: StudentState['attention']
+  x: number, y: number,
+  trend: string
 ): void {
-  const target = attention.target;
-  const confidence = Math.round(attention.confidence * 100);
+  ctx.font = '14px Arial';
   
-  // Format target name
-  const displayTarget = target.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  
-  // Background
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.fillRect(x, y, Math.max(displayTarget.length * 7 + 40, 120), 20);
-  
-  // Text
-  ctx.fillStyle = '#a0a0a0';
-  ctx.font = '11px Arial';
-  ctx.fillText(`→ ${displayTarget} (${confidence}%)`, x + 5, y + 14);
-}
-
-/**
- * Draw confidence indicators
- */
-function drawConfidenceIndicator(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  trackingConfidence: number,
-  behaviorConfidence: number
-): void {
-  const trackingPercent = Math.round(trackingConfidence * 100);
-  const behaviorPercent = Math.round(behaviorConfidence * 100);
-  
-  // Background
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-  ctx.fillRect(x, y, 100, 15);
-  
-  // Confidence bars
-  ctx.fillStyle = trackingConfidence > 0.7 ? '#10b981' : trackingConfidence > 0.4 ? '#f59e0b' : '#ef4444';
-  ctx.fillRect(x + 2, y + 2, (trackingConfidence * 45), 5);
-  
-  ctx.fillStyle = behaviorConfidence > 0.7 ? '#10b981' : behaviorConfidence > 0.4 ? '#f59e0b' : '#ef4444';
-  ctx.fillRect(x + 2, y + 8, (behaviorConfidence * 45), 5);
-  
-  // Text
-  ctx.fillStyle = 'white';
-  ctx.font = '9px Arial';
-  ctx.fillText(`T:${trackingPercent}% B:${behaviorPercent}%`, x + 50, y + 11);
+  if (trend === 'increasing') {
+    ctx.fillStyle = '#22c55e';
+    ctx.fillText('↑', x, y + 12);
+  } else if (trend === 'decreasing') {
+    ctx.fillStyle = '#ef4444';
+    ctx.fillText('↓', x, y + 12);
+  } else {
+    ctx.fillStyle = '#6b7280';
+    ctx.fillText('→', x, y + 12);
+  }
 }
 
 /**
  * Draw behavior history timeline
  */
-function drawBehaviorHistory(
+function drawBehaviorTimeline(
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  behaviorHistory: StudentState['behavior'][]
+  x: number, y: number, width: number,
+  behaviors: Array<{ primaryBehavior: PrimaryBehavior }>
 ): void {
-  if (behaviorHistory.length === 0) return;
-  
-  const historyWidth = Math.min(behaviorHistory.length * 8, 200);
-  const historyHeight = 10;
-  
+  if (behaviors.length === 0) return;
+
+  const segmentWidth = Math.max(4, width / behaviors.length);
+  const height = 6;
+
   // Background
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-  ctx.fillRect(x, y, historyWidth, historyHeight);
-  
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  ctx.fillRect(x, y, width, height);
+
   // Draw behavior segments
-  behaviorHistory.forEach((behavior, index) => {
-    const segmentWidth = historyWidth / behaviorHistory.length;
+  behaviors.forEach((behavior, index) => {
     const segmentX = x + (index * segmentWidth);
-    const color = BEHAVIOR_COLORS[behavior.primaryBehavior as keyof typeof BEHAVIOR_COLORS] || '#6b7280';
+    const color = BEHAVIOR_COLORS[behavior.primaryBehavior] || '#6b7280';
     
     ctx.fillStyle = color;
-    ctx.fillRect(segmentX, y + 1, segmentWidth - 1, historyHeight - 2);
+    ctx.fillRect(segmentX, y, segmentWidth - 1, height);
   });
 }
 
 /**
- * Draw gaze point indicator
- */
-function drawGazeIndicator(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  confidence: number
-): void {
-  const radius = 3 + (confidence * 2);
-  const alpha = 0.3 + (confidence * 0.4);
-  
-  ctx.fillStyle = `rgba(255, 255, 0, ${alpha})`;
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, 2 * Math.PI);
-  ctx.fill();
-  
-  // Inner dot
-  ctx.fillStyle = `rgba(255, 255, 255, ${alpha + 0.3})`;
-  ctx.beginPath();
-  ctx.arc(x, y, 1, 0, 2 * Math.PI);
-  ctx.fill();
-}
-
-/**
- * Render classroom summary information
+ * Render classroom summary panel
  */
 function renderClassroomSummary(
   ctx: CanvasRenderingContext2D,
   classroomState: ClassroomState,
-  canvasWidth: number,
-  canvasHeight: number
+  canvasWidth: number
 ): void {
-  const summaryX = canvasWidth - 250;
-  const summaryY = 20;
-  
+  const panelWidth = 220;
+  const panelHeight = 130;
+  const panelX = canvasWidth - panelWidth - 15;
+  const panelY = 15;
+
   // Background
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.fillRect(summaryX, summaryY, 230, 120);
-  
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+  ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+
+  // Border
+  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
+
+  const textX = panelX + 12;
+  let textY = panelY + 20;
+
   // Title
-  ctx.fillStyle = 'white';
-  ctx.font = 'bold 14px Arial';
-  ctx.fillText('Classroom Overview', summaryX + 10, summaryY + 20);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 13px Arial';
+  ctx.fillText('Classroom Overview', textX, textY);
+  textY += 22;
+
+  // Stats
+  ctx.font = '11px Arial';
   
-  // Statistics
-  ctx.font = '12px Arial';
-  ctx.fillText(`Active Students: ${classroomState.activeStudents}`, summaryX + 10, summaryY + 40);
-  ctx.fillText(`Avg Engagement: ${Math.round(classroomState.averageEngagement)}%`, summaryX + 10, summaryY + 55);
-  
+  // Active students
+  ctx.fillStyle = '#3b82f6';
+  ctx.fillText(`Active Students: ${classroomState.activeStudents}`, textX, textY);
+  textY += 16;
+
+  // Average engagement
+  const avgEngColor = classroomState.averageEngagement >= 70 ? '#22c55e' :
+                      classroomState.averageEngagement >= 50 ? '#f59e0b' : '#ef4444';
+  ctx.fillStyle = avgEngColor;
+  ctx.fillText(`Avg Engagement: ${Math.round(classroomState.averageEngagement)}%`, textX, textY);
+  textY += 18;
+
   // Engagement distribution
+  ctx.fillStyle = '#888888';
+  ctx.font = '10px Arial';
+  ctx.fillText('Distribution:', textX, textY);
+  textY += 14;
+
   const dist = classroomState.engagementDistribution;
-  ctx.fillText('Engagement Distribution:', summaryX + 10, summaryY + 75);
+  const distX = textX + 8;
   
   ctx.fillStyle = ENGAGEMENT_COLORS.high;
-  ctx.fillText(`High: ${dist.high}`, summaryX + 15, summaryY + 90);
+  ctx.fillText(`High: ${dist.high}`, distX, textY);
   
   ctx.fillStyle = ENGAGEMENT_COLORS.medium;
-  ctx.fillText(`Medium: ${dist.medium}`, summaryX + 70, summaryY + 90);
-  
+  ctx.fillText(`Med: ${dist.medium}`, distX + 55, textY);
+  textY += 12;
+
   ctx.fillStyle = ENGAGEMENT_COLORS.low;
-  ctx.fillText(`Low: ${dist.low}`, summaryX + 15, summaryY + 105);
+  ctx.fillText(`Low: ${dist.low}`, distX, textY);
   
   ctx.fillStyle = ENGAGEMENT_COLORS.disengaged;
-  ctx.fillText(`Disengaged: ${dist.disengaged}`, summaryX + 70, summaryY + 105);
-  
+  ctx.fillText(`Dis: ${dist.disengaged}`, distX + 55, textY);
+
   // Alerts indicator
   if (classroomState.alerts.length > 0) {
+    const alertX = panelX + panelWidth - 30;
+    const alertY = panelY + 8;
+    
     ctx.fillStyle = '#ef4444';
-    ctx.fillRect(summaryX + 200, summaryY + 5, 20, 20);
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 12px Arial';
-    ctx.fillText(classroomState.alerts.length.toString(), summaryX + 207, summaryY + 18);
+    ctx.beginPath();
+    ctx.arc(alertX + 10, alertY + 10, 12, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px Arial';
+    ctx.fillText(classroomState.alerts.length.toString(), alertX + 7, alertY + 14);
   }
 }
 

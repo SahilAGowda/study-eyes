@@ -1,418 +1,651 @@
 /**
  * Emotion Recognition Service
  * 
- * Robust emotion recognition with confidence scores, replacing heuristic-based approach.
- * Uses facial action units (AUs) and geometric features for reliable emotion classification.
+ * Robust emotion recognition using facial geometry and action units.
+ * Properly detects smiles, expressions, and maps them to engagement states.
  */
 
 import type { Point } from '../types';
 import type { StudentEmotion } from '../types/studentState';
 
 export interface EmotionConfig {
-  // Feature extraction parameters
-  eyeAspectRatioThreshold: number;
-  mouthAspectRatioThreshold: number;
-  eyebrowMovementThreshold: number;
-  cheekRaiseThreshold: number;
-  
-  // Confidence thresholds
   minConfidenceThreshold: number;
   neutralConfidenceThreshold: number;
-  
-  // Temporal smoothing
   temporalWindowSize: number;
   smoothingAlpha: number;
-  
-  // Validation parameters
   minLandmarksRequired: number;
   faceQualityThreshold: number;
 }
 
 /**
- * Facial Action Units (AUs) for emotion recognition
- * Based on Facial Action Coding System (FACS)
- */
-interface FacialActionUnits {
-  // Eye region
-  AU1_innerBrowRaise: number;     // Inner brow raiser
-  AU2_outerBrowRaise: number;     // Outer brow raiser
-  AU4_browLower: number;          // Brow lowerer
-  AU5_upperLidRaise: number;      // Upper lid raiser
-  AU6_cheekRaise: number;         // Cheek raiser
-  AU7_lidTighten: number;         // Lid tightener
-  
-  // Mouth region
-  AU9_noseWrinkle: number;        // Nose wrinkler
-  AU10_upperLipRaise: number;     // Upper lip raiser
-  AU12_lipCornerPull: number;     // Lip corner puller (smile)
-  AU15_lipCornerDepress: number;  // Lip corner depressor
-  AU16_lowerLipDepress: number;   // Lower lip depressor
-  AU17_chinRaise: number;         // Chin raiser
-  AU20_lipStretch: number;        // Lip stretcher
-  AU23_lipTighten: number;        // Lip tightener
-  AU24_lipPress: number;          // Lip presser
-  AU25_lipsPart: number;          // Lips part
-  AU26_jawDrop: number;           // Jaw drop
-  AU27_mouthStretch: number;      // Mouth stretch
-  
-  // Head movement
-  AU51_headTurnLeft: number;      // Head turn left
-  AU52_headTurnRight: number;     // Head turn right
-  AU53_headUp: number;            // Head up
-  AU54_headDown: number;          // Head down
-  AU55_headTiltLeft: number;      // Head tilt left
-  AU56_headTiltRight: number;     // Head tilt right
-}
-
-/**
- * Emotion classification rules based on Action Units
- */
-const EMOTION_RULES: Record<keyof StudentEmotion['emotions'], (aus: FacialActionUnits) => number> = {
-  engaged: (aus) => {
-    // Engaged: Slight smile + raised eyebrows + forward head position
-    return Math.min(1.0, 
-      aus.AU12_lipCornerPull * 0.4 +
-      aus.AU1_innerBrowRaise * 0.3 +
-      aus.AU6_cheekRaise * 0.2 +
-      (1 - aus.AU54_headDown) * 0.1
-    );
-  },
-  
-  confused: (aus) => {
-    // Confused: Asymmetric eyebrow raise + slight frown + head tilt
-    return Math.min(1.0,
-      Math.abs(aus.AU1_innerBrowRaise - aus.AU2_outerBrowRaise) * 0.4 +
-      aus.AU4_browLower * 0.3 +
-      (aus.AU55_headTiltLeft + aus.AU56_headTiltRight) * 0.2 +
-      aus.AU23_lipTighten * 0.1
-    );
-  },
-  
-  bored: (aus) => {
-    // Bored: Droopy eyelids + mouth slightly open + head down
-    return Math.min(1.0,
-      (1 - aus.AU5_upperLidRaise) * 0.4 +
-      aus.AU25_lipsPart * 0.2 +
-      aus.AU54_headDown * 0.3 +
-      (1 - aus.AU12_lipCornerPull) * 0.1
-    );
-  },
-  
-  frustrated: (aus) => {
-    // Frustrated: Furrowed brow + tight lips + jaw clench
-    return Math.min(1.0,
-      aus.AU4_browLower * 0.4 +
-      aus.AU23_lipTighten * 0.3 +
-      aus.AU24_lipPress * 0.2 +
-      aus.AU7_lidTighten * 0.1
-    );
-  },
-  
-  focused: (aus) => {
-    // Focused: Slight brow furrow + neutral mouth + steady gaze
-    return Math.min(1.0,
-      aus.AU4_browLower * 0.2 +
-      (1 - aus.AU25_lipsPart) * 0.3 +
-      (1 - aus.AU12_lipCornerPull - aus.AU15_lipCornerDepress) * 0.3 +
-      (1 - Math.abs(aus.AU51_headTurnLeft - aus.AU52_headTurnRight)) * 0.2
-    );
-  },
-  
-  drowsy: (aus) => {
-    // Drowsy: Heavy eyelids + mouth slightly open + head dropping
-    return Math.min(1.0,
-      (1 - aus.AU5_upperLidRaise) * 0.5 +
-      aus.AU25_lipsPart * 0.2 +
-      aus.AU54_headDown * 0.2 +
-      aus.AU26_jawDrop * 0.1
-    );
-  },
-  
-  neutral: (aus) => {
-    // Neutral: Baseline state with minimal facial activity
-    const totalActivity = Object.values(aus).reduce((sum, au) => sum + Math.abs(au), 0);
-    return Math.max(0, 1 - (totalActivity / Object.keys(aus).length));
-  },
-};
-
-/**
  * FaceMesh landmark indices for emotion recognition
+ * Using correct MediaPipe FaceMesh indices
  */
-const EMOTION_LANDMARKS = {
-  // Eye region landmarks
+const LANDMARKS = {
+  // Mouth landmarks
+  upperLipTop: 13,
+  upperLipBottom: 14,
+  lowerLipTop: 17,
+  lowerLipBottom: 0,
+  mouthLeft: 61,
+  mouthRight: 291,
+  mouthTop: 13,
+  mouthBottom: 14,
+  
+  // More precise mouth corners
+  leftMouthCorner: 61,
+  rightMouthCorner: 291,
+  
+  // Upper/lower lip inner
+  upperLipInner: 13,
+  lowerLipInner: 14,
+  
+  // Eye landmarks
   leftEyeTop: 159,
   leftEyeBottom: 145,
-  leftEyeLeft: 33,
-  leftEyeRight: 133,
-  leftEyebrowInner: 70,
-  leftEyebrowOuter: 46,
-  leftEyebrowTop: 107,
+  leftEyeInner: 133,
+  leftEyeOuter: 33,
   
   rightEyeTop: 386,
   rightEyeBottom: 374,
-  rightEyeLeft: 362,
-  rightEyeRight: 263,
-  rightEyebrowInner: 300,
-  rightEyebrowOuter: 276,
-  rightEyebrowTop: 336,
+  rightEyeInner: 362,
+  rightEyeOuter: 263,
   
-  // Mouth region landmarks
-  mouthTop: 13,
-  mouthBottom: 14,
-  mouthLeft: 61,
-  mouthRight: 291,
-  upperLipTop: 12,
-  upperLipBottom: 15,
-  lowerLipTop: 16,
-  lowerLipBottom: 17,
-  lipCornerLeft: 61,
-  lipCornerRight: 291,
+  // Eyebrow landmarks
+  leftEyebrowInner: 107,
+  leftEyebrowOuter: 66,
+  leftEyebrowTop: 105,
   
-  // Cheek landmarks
-  leftCheek: 116,
-  rightCheek: 345,
+  rightEyebrowInner: 336,
+  rightEyebrowOuter: 296,
+  rightEyebrowTop: 334,
   
-  // Nose landmarks
-  noseTip: 1,
-  noseLeft: 31,
-  noseRight: 261,
-  
-  // Chin landmarks
+  // Face structure
+  noseTip: 4,
+  noseBottom: 2,
   chin: 152,
-  jawLeft: 172,
-  jawRight: 397,
+  foreheadCenter: 10,
+  
+  // Cheeks (for smile detection)
+  leftCheekHigh: 50,
+  rightCheekHigh: 280,
+  leftCheekLow: 123,
+  rightCheekLow: 352,
 };
+
+/**
+ * Facial feature measurements for emotion detection
+ */
+interface FacialFeatures {
+  // Smile indicators
+  mouthWidth: number;           // Horizontal mouth stretch
+  mouthHeight: number;          // Vertical mouth opening
+  mouthAspectRatio: number;     // Width/Height ratio
+  lipCornerRaise: number;       // How much corners are raised (smile)
+  mouthOpenness: number;        // 0-1, how open the mouth is
+  teethVisible: number;         // Estimated teeth visibility
+  
+  // Eye indicators
+  leftEyeOpenness: number;      // 0-1
+  rightEyeOpenness: number;     // 0-1
+  eyeSquint: number;            // Duchenne smile indicator
+  
+  // Eyebrow indicators
+  leftBrowRaise: number;        // 0-1
+  rightBrowRaise: number;       // 0-1
+  browFurrow: number;           // 0-1, brows pulled together
+  
+  // Cheek indicators
+  cheekRaise: number;           // 0-1, raised cheeks (smile)
+  
+  // Face metrics for normalization
+  faceWidth: number;
+  faceHeight: number;
+}
 
 export class EmotionRecognizer {
   private config: Required<EmotionConfig>;
   private emotionHistory: StudentEmotion[] = [];
-  private auHistory: FacialActionUnits[] = [];
+  private featureHistory: FacialFeatures[] = [];
+  private baselineFeatures: FacialFeatures | null = null;
+  private frameCount: number = 0;
   
   constructor(config: Partial<EmotionConfig> = {}) {
     this.config = {
-      eyeAspectRatioThreshold: 0.25,
-      mouthAspectRatioThreshold: 0.15,
-      eyebrowMovementThreshold: 0.08,
-      cheekRaiseThreshold: 0.03,
-      minConfidenceThreshold: 0.6,
-      neutralConfidenceThreshold: 0.4,
-      temporalWindowSize: 5,
-      smoothingAlpha: 0.3,
-      minLandmarksRequired: 20,
-      faceQualityThreshold: 0.7,
+      minConfidenceThreshold: 0.3,
+      neutralConfidenceThreshold: 0.25,
+      temporalWindowSize: 8,
+      smoothingAlpha: 0.4,
+      minLandmarksRequired: 100,
+      faceQualityThreshold: 0.5,
       ...config,
     };
   }
-  
+
   /**
-   * Recognize emotion from facial landmarks
+   * Main emotion recognition entry point
    */
   public recognizeEmotion(
     landmarks: Point[],
     faceConfidence: number = 1.0
   ): StudentEmotion | null {
     
-    if (landmarks.length < this.config.minLandmarksRequired) {
-      console.warn('Insufficient landmarks for emotion recognition');
-      return null;
+    if (!landmarks || landmarks.length < this.config.minLandmarksRequired) {
+      return this.getDefaultEmotion();
     }
     
     if (faceConfidence < this.config.faceQualityThreshold) {
-      console.warn('Face quality too low for reliable emotion recognition');
-      return null;
+      return this.getDefaultEmotion();
     }
     
     try {
-      // Extract facial action units
-      const actionUnits = this.extractActionUnits(landmarks);
+      // Extract facial features
+      const features = this.extractFacialFeatures(landmarks);
       
-      // Calculate emotion scores
-      const emotionScores = this.calculateEmotionScores(actionUnits);
+      // Update baseline (first few frames establish neutral)
+      this.updateBaseline(features);
+      
+      // Calculate emotion scores based on features
+      const emotionScores = this.calculateEmotionScores(features);
       
       // Determine primary emotion
       const primaryEmotion = this.determinePrimaryEmotion(emotionScores);
       
-      // Calculate valence, arousal, dominance
-      const vad = this.calculateVAD(emotionScores, actionUnits);
+      // Calculate VAD (Valence-Arousal-Dominance)
+      const vad = this.calculateVAD(emotionScores, features);
       
-      // Create emotion result
+      // Build emotion result
       const emotion: StudentEmotion = {
         valence: vad.valence,
         arousal: vad.arousal,
         dominance: vad.dominance,
         emotions: emotionScores,
         primaryEmotion,
-        confidence: this.calculateOverallConfidence(emotionScores, faceConfidence),
+        confidence: this.calculateConfidence(emotionScores, features, faceConfidence),
       };
       
       // Apply temporal smoothing
       const smoothedEmotion = this.applyTemporalSmoothing(emotion);
       
       // Update history
-      this.updateHistory(smoothedEmotion, actionUnits);
+      this.updateHistory(smoothedEmotion, features);
+      this.frameCount++;
       
       return smoothedEmotion;
       
     } catch (error) {
-      console.error('Emotion recognition failed:', error);
-      return null;
+      console.error('Emotion recognition error:', error);
+      return this.getDefaultEmotion();
     }
   }
-  
+
   /**
-   * Extract facial action units from landmarks
+   * Extract facial features from landmarks
    */
-  private extractActionUnits(landmarks: Point[]): FacialActionUnits {
-    const aus: FacialActionUnits = {
-      // Eye region AUs
-      AU1_innerBrowRaise: this.calculateInnerBrowRaise(landmarks),
-      AU2_outerBrowRaise: this.calculateOuterBrowRaise(landmarks),
-      AU4_browLower: this.calculateBrowLower(landmarks),
-      AU5_upperLidRaise: this.calculateUpperLidRaise(landmarks),
-      AU6_cheekRaise: this.calculateCheekRaise(landmarks),
-      AU7_lidTighten: this.calculateLidTighten(landmarks),
-      
-      // Mouth region AUs
-      AU9_noseWrinkle: this.calculateNoseWrinkle(landmarks),
-      AU10_upperLipRaise: this.calculateUpperLipRaise(landmarks),
-      AU12_lipCornerPull: this.calculateLipCornerPull(landmarks),
-      AU15_lipCornerDepress: this.calculateLipCornerDepress(landmarks),
-      AU16_lowerLipDepress: this.calculateLowerLipDepress(landmarks),
-      AU17_chinRaise: this.calculateChinRaise(landmarks),
-      AU20_lipStretch: this.calculateLipStretch(landmarks),
-      AU23_lipTighten: this.calculateLipTighten(landmarks),
-      AU24_lipPress: this.calculateLipPress(landmarks),
-      AU25_lipsPart: this.calculateLipsPart(landmarks),
-      AU26_jawDrop: this.calculateJawDrop(landmarks),
-      AU27_mouthStretch: this.calculateMouthStretch(landmarks),
-      
-      // Head movement AUs
-      AU51_headTurnLeft: this.calculateHeadTurnLeft(landmarks),
-      AU52_headTurnRight: this.calculateHeadTurnRight(landmarks),
-      AU53_headUp: this.calculateHeadUp(landmarks),
-      AU54_headDown: this.calculateHeadDown(landmarks),
-      AU55_headTiltLeft: this.calculateHeadTiltLeft(landmarks),
-      AU56_headTiltRight: this.calculateHeadTiltRight(landmarks),
-    };
+  private extractFacialFeatures(landmarks: Point[]): FacialFeatures {
+    // Get key landmarks with safety checks
+    const get = (idx: number): Point => landmarks[idx] || { x: 0, y: 0 };
     
-    return aus;
+    // Face dimensions for normalization
+    const leftFace = get(234);  // Left face edge
+    const rightFace = get(454); // Right face edge
+    const forehead = get(10);   // Top of face
+    const chin = get(LANDMARKS.chin);
+    
+    const faceWidth = Math.abs(rightFace.x - leftFace.x) || 100;
+    const faceHeight = Math.abs(chin.y - forehead.y) || 150;
+    
+    // === MOUTH ANALYSIS ===
+    const mouthLeft = get(LANDMARKS.leftMouthCorner);
+    const mouthRight = get(LANDMARKS.rightMouthCorner);
+    const mouthTop = get(LANDMARKS.upperLipTop);
+    const mouthBottom = get(LANDMARKS.lowerLipInner);
+    const upperLipBottom = get(LANDMARKS.upperLipBottom);
+    const lowerLipTop = get(LANDMARKS.lowerLipTop);
+    
+    // Mouth dimensions
+    const mouthWidth = Math.abs(mouthRight.x - mouthLeft.x);
+    const mouthHeight = Math.abs(mouthBottom.y - mouthTop.y);
+    const mouthAspectRatio = mouthHeight > 0 ? mouthWidth / mouthHeight : 0;
+    
+    // Lip corner raise (CRITICAL for smile detection)
+    // When smiling, mouth corners move UP (lower y value) relative to mouth center
+    const mouthCenterY = (mouthTop.y + mouthBottom.y) / 2;
+    const leftCornerRaise = mouthCenterY - mouthLeft.y;
+    const rightCornerRaise = mouthCenterY - mouthRight.y;
+    const lipCornerRaise = Math.max(0, (leftCornerRaise + rightCornerRaise) / 2) / faceHeight;
+    
+    // Mouth openness (gap between lips)
+    const lipGap = Math.max(0, lowerLipTop.y - upperLipBottom.y);
+    const mouthOpenness = Math.min(1, lipGap / (faceHeight * 0.15));
+    
+    // Teeth visibility estimate (large mouth opening + wide mouth = teeth showing)
+    const teethVisible = Math.min(1, (mouthOpenness * 0.6 + (mouthWidth / faceWidth) * 0.4));
+    
+    // === EYE ANALYSIS ===
+    const leftEyeTop = get(LANDMARKS.leftEyeTop);
+    const leftEyeBottom = get(LANDMARKS.leftEyeBottom);
+    const rightEyeTop = get(LANDMARKS.rightEyeTop);
+    const rightEyeBottom = get(LANDMARKS.rightEyeBottom);
+    
+    const leftEyeHeight = Math.abs(leftEyeBottom.y - leftEyeTop.y);
+    const rightEyeHeight = Math.abs(rightEyeBottom.y - rightEyeTop.y);
+    
+    const leftEyeOpenness = Math.min(1, leftEyeHeight / (faceHeight * 0.08));
+    const rightEyeOpenness = Math.min(1, rightEyeHeight / (faceHeight * 0.08));
+    
+    // Eye squint (Duchenne smile - eyes narrow when genuinely smiling)
+    const avgEyeOpenness = (leftEyeOpenness + rightEyeOpenness) / 2;
+    const eyeSquint = Math.max(0, 1 - avgEyeOpenness);
+    
+    // === EYEBROW ANALYSIS ===
+    const leftBrowTop = get(LANDMARKS.leftEyebrowTop);
+    const rightBrowTop = get(LANDMARKS.rightEyebrowTop);
+    const leftBrowInner = get(LANDMARKS.leftEyebrowInner);
+    const rightBrowInner = get(LANDMARKS.rightEyebrowInner);
+    
+    // Brow raise (distance from eye to brow)
+    const leftBrowToEye = Math.abs(leftEyeTop.y - leftBrowTop.y);
+    const rightBrowToEye = Math.abs(rightEyeTop.y - rightBrowTop.y);
+    const leftBrowRaise = Math.min(1, leftBrowToEye / (faceHeight * 0.12));
+    const rightBrowRaise = Math.min(1, rightBrowToEye / (faceHeight * 0.12));
+    
+    // Brow furrow (inner brows pulled together)
+    const browInnerDistance = Math.abs(rightBrowInner.x - leftBrowInner.x);
+    const browFurrow = Math.max(0, 1 - (browInnerDistance / (faceWidth * 0.25)));
+    
+    // === CHEEK ANALYSIS ===
+    const leftCheekHigh = get(LANDMARKS.leftCheekHigh);
+    const rightCheekHigh = get(LANDMARKS.rightCheekHigh);
+    const leftCheekLow = get(LANDMARKS.leftCheekLow);
+    const rightCheekLow = get(LANDMARKS.rightCheekLow);
+    
+    // Cheek raise (cheeks move up when smiling)
+    const leftCheekRaise = Math.max(0, leftCheekLow.y - leftCheekHigh.y) / faceHeight;
+    const rightCheekRaise = Math.max(0, rightCheekLow.y - rightCheekHigh.y) / faceHeight;
+    const cheekRaise = (leftCheekRaise + rightCheekRaise) / 2;
+    
+    return {
+      mouthWidth,
+      mouthHeight,
+      mouthAspectRatio,
+      lipCornerRaise,
+      mouthOpenness,
+      teethVisible,
+      leftEyeOpenness,
+      rightEyeOpenness,
+      eyeSquint,
+      leftBrowRaise,
+      rightBrowRaise,
+      browFurrow,
+      cheekRaise,
+      faceWidth,
+      faceHeight,
+    };
   }
-  
+
   /**
-   * Calculate emotion scores from action units
+   * Update baseline features from first few frames
    */
-  private calculateEmotionScores(aus: FacialActionUnits): StudentEmotion['emotions'] {
-    const scores: StudentEmotion['emotions'] = {
-      engaged: EMOTION_RULES.engaged(aus),
-      confused: EMOTION_RULES.confused(aus),
-      bored: EMOTION_RULES.bored(aus),
-      frustrated: EMOTION_RULES.frustrated(aus),
-      focused: EMOTION_RULES.focused(aus),
-      drowsy: EMOTION_RULES.drowsy(aus),
-      neutral: EMOTION_RULES.neutral(aus),
+  private updateBaseline(features: FacialFeatures): void {
+    if (this.frameCount < 10) {
+      if (!this.baselineFeatures) {
+        this.baselineFeatures = { ...features };
+      } else {
+        // Running average for baseline
+        const alpha = 0.3;
+        Object.keys(this.baselineFeatures).forEach(key => {
+          const k = key as keyof FacialFeatures;
+          (this.baselineFeatures as any)[k] = 
+            alpha * features[k] + (1 - alpha) * (this.baselineFeatures as any)[k];
+        });
+      }
+    }
+  }
+
+  /**
+   * Calculate emotion scores from facial features
+   */
+  private calculateEmotionScores(features: FacialFeatures): StudentEmotion['emotions'] {
+    // Normalize features relative to baseline if available
+    const baseline = this.baselineFeatures || features;
+    
+    // === ENGAGED/HAPPY Detection ===
+    // Key indicators: lip corner raise, mouth width, cheek raise, eye squint
+    const smileScore = this.calculateSmileScore(features, baseline);
+    
+    // === FOCUSED Detection ===
+    // Key indicators: neutral mouth, slight brow furrow, steady gaze
+    const focusedScore = this.calculateFocusedScore(features, baseline);
+    
+    // === CONFUSED Detection ===
+    // Key indicators: asymmetric brow raise, slight frown, head tilt
+    const confusedScore = this.calculateConfusedScore(features, baseline);
+    
+    // === BORED Detection ===
+    // Key indicators: droopy eyes, slack mouth, low arousal
+    const boredScore = this.calculateBoredScore(features, baseline);
+    
+    // === FRUSTRATED Detection ===
+    // Key indicators: brow furrow, tight lips, tense face
+    const frustratedScore = this.calculateFrustratedScore(features, baseline);
+    
+    // === DROWSY Detection ===
+    // Key indicators: heavy eyelids, slack jaw, low energy
+    const drowsyScore = this.calculateDrowsyScore(features, baseline);
+    
+    // === NEUTRAL Detection ===
+    // Key indicators: minimal facial activity
+    const neutralScore = this.calculateNeutralScore(features, baseline);
+    
+    // Raw scores
+    const rawScores = {
+      engaged: smileScore,      // Happy/smiling maps to engaged
+      confused: confusedScore,
+      bored: boredScore,
+      frustrated: frustratedScore,
+      focused: focusedScore,
+      drowsy: drowsyScore,
+      neutral: neutralScore,
     };
     
-    // Normalize scores to sum to 1
-    const total = Object.values(scores).reduce((sum, score) => sum + score, 0);
+    // Normalize to sum to 1
+    const total = Object.values(rawScores).reduce((sum, s) => sum + s, 0);
+    const normalized: StudentEmotion['emotions'] = {} as StudentEmotion['emotions'];
+    
     if (total > 0) {
-      Object.keys(scores).forEach(key => {
-        scores[key as keyof typeof scores] /= total;
+      Object.keys(rawScores).forEach(key => {
+        normalized[key as keyof StudentEmotion['emotions']] = 
+          rawScores[key as keyof typeof rawScores] / total;
       });
+    } else {
+      // Default to neutral
+      normalized.neutral = 1;
+      normalized.engaged = 0;
+      normalized.confused = 0;
+      normalized.bored = 0;
+      normalized.frustrated = 0;
+      normalized.focused = 0;
+      normalized.drowsy = 0;
     }
     
-    return scores;
+    return normalized;
   }
-  
+
+  /**
+   * Calculate smile/happy/engaged score
+   */
+  private calculateSmileScore(features: FacialFeatures, baseline: FacialFeatures): number {
+    let score = 0;
+    
+    // Lip corner raise is the PRIMARY smile indicator
+    // Normalized lip corner raise > 0.02 indicates smile
+    const cornerRaiseScore = Math.min(1, features.lipCornerRaise * 15);
+    score += cornerRaiseScore * 0.35;
+    
+    // Wide mouth (stretched horizontally)
+    const mouthWidthRatio = features.mouthWidth / features.faceWidth;
+    const wideMouthScore = Math.min(1, Math.max(0, (mouthWidthRatio - 0.35) * 5));
+    score += wideMouthScore * 0.25;
+    
+    // Mouth openness (laughing = open mouth)
+    score += features.mouthOpenness * 0.15;
+    
+    // Cheek raise (Duchenne marker)
+    score += Math.min(1, features.cheekRaise * 8) * 0.15;
+    
+    // Eye squint (genuine smile narrows eyes)
+    if (features.lipCornerRaise > 0.01) {
+      score += features.eyeSquint * 0.1;
+    }
+    
+    return Math.min(1, Math.max(0, score));
+  }
+
+  /**
+   * Calculate focused score
+   */
+  private calculateFocusedScore(features: FacialFeatures, baseline: FacialFeatures): number {
+    let score = 0;
+    
+    // Neutral/closed mouth
+    const mouthClosed = 1 - features.mouthOpenness;
+    score += mouthClosed * 0.3;
+    
+    // Slight brow activity (concentration)
+    const browActivity = (features.browFurrow + features.leftBrowRaise + features.rightBrowRaise) / 3;
+    if (browActivity > 0.1 && browActivity < 0.5) {
+      score += 0.3;
+    }
+    
+    // Eyes open and alert
+    const eyeOpenness = (features.leftEyeOpenness + features.rightEyeOpenness) / 2;
+    if (eyeOpenness > 0.4 && eyeOpenness < 0.9) {
+      score += 0.25;
+    }
+    
+    // No smile (focused is not happy)
+    const noSmile = 1 - Math.min(1, features.lipCornerRaise * 10);
+    score += noSmile * 0.15;
+    
+    return Math.min(1, Math.max(0, score));
+  }
+
+  /**
+   * Calculate confused score
+   */
+  private calculateConfusedScore(features: FacialFeatures, baseline: FacialFeatures): number {
+    let score = 0;
+    
+    // Asymmetric brow raise
+    const browAsymmetry = Math.abs(features.leftBrowRaise - features.rightBrowRaise);
+    score += Math.min(1, browAsymmetry * 3) * 0.35;
+    
+    // Brow furrow
+    score += features.browFurrow * 0.25;
+    
+    // Slight mouth tension
+    const mouthTension = 1 - features.mouthOpenness;
+    if (mouthTension > 0.5 && features.lipCornerRaise < 0.02) {
+      score += 0.2;
+    }
+    
+    // Squinted eyes (trying to understand)
+    score += features.eyeSquint * 0.2;
+    
+    return Math.min(1, Math.max(0, score));
+  }
+
+  /**
+   * Calculate bored score
+   */
+  private calculateBoredScore(features: FacialFeatures, baseline: FacialFeatures): number {
+    let score = 0;
+    
+    // Droopy/half-closed eyes
+    const avgEyeOpenness = (features.leftEyeOpenness + features.rightEyeOpenness) / 2;
+    if (avgEyeOpenness < 0.5) {
+      score += (0.5 - avgEyeOpenness) * 0.4;
+    }
+    
+    // Slack/neutral mouth
+    if (features.mouthOpenness < 0.2 && features.lipCornerRaise < 0.01) {
+      score += 0.3;
+    }
+    
+    // Low brow activity
+    const lowBrowActivity = 1 - (features.browFurrow + features.leftBrowRaise + features.rightBrowRaise) / 3;
+    score += lowBrowActivity * 0.2;
+    
+    // No smile
+    const noSmile = 1 - Math.min(1, features.lipCornerRaise * 10);
+    score += noSmile * 0.1;
+    
+    return Math.min(1, Math.max(0, score));
+  }
+
+  /**
+   * Calculate frustrated score
+   */
+  private calculateFrustratedScore(features: FacialFeatures, baseline: FacialFeatures): number {
+    let score = 0;
+    
+    // Strong brow furrow
+    score += features.browFurrow * 0.4;
+    
+    // Tight/pressed lips
+    const tightLips = 1 - features.mouthOpenness;
+    if (tightLips > 0.7 && features.lipCornerRaise < 0) {
+      score += 0.3;
+    }
+    
+    // Narrowed eyes (not from smiling)
+    if (features.eyeSquint > 0.3 && features.lipCornerRaise < 0.01) {
+      score += features.eyeSquint * 0.2;
+    }
+    
+    // Lowered brows
+    const lowBrows = 1 - (features.leftBrowRaise + features.rightBrowRaise) / 2;
+    score += lowBrows * 0.1;
+    
+    return Math.min(1, Math.max(0, score));
+  }
+
+  /**
+   * Calculate drowsy score
+   */
+  private calculateDrowsyScore(features: FacialFeatures, baseline: FacialFeatures): number {
+    let score = 0;
+    
+    // Heavy/closing eyelids
+    const avgEyeOpenness = (features.leftEyeOpenness + features.rightEyeOpenness) / 2;
+    if (avgEyeOpenness < 0.4) {
+      score += (0.4 - avgEyeOpenness) * 0.5;
+    }
+    
+    // Slack jaw/mouth slightly open
+    if (features.mouthOpenness > 0.1 && features.mouthOpenness < 0.4) {
+      score += 0.25;
+    }
+    
+    // Low facial activity overall
+    const lowActivity = 1 - (features.browFurrow + features.lipCornerRaise * 5 + features.cheekRaise * 3) / 3;
+    score += Math.max(0, lowActivity) * 0.25;
+    
+    return Math.min(1, Math.max(0, score));
+  }
+
+  /**
+   * Calculate neutral score
+   */
+  private calculateNeutralScore(features: FacialFeatures, baseline: FacialFeatures): number {
+    // Neutral = low activity across all features
+    const smileActivity = features.lipCornerRaise * 10;
+    const browActivity = features.browFurrow + Math.abs(features.leftBrowRaise - 0.5) + Math.abs(features.rightBrowRaise - 0.5);
+    const mouthActivity = features.mouthOpenness;
+    const eyeActivity = Math.abs((features.leftEyeOpenness + features.rightEyeOpenness) / 2 - 0.6);
+    
+    const totalActivity = (smileActivity + browActivity + mouthActivity + eyeActivity) / 4;
+    
+    return Math.max(0, 1 - totalActivity * 2);
+  }
+
   /**
    * Determine primary emotion from scores
    */
-  private determinePrimaryEmotion(
-    scores: StudentEmotion['emotions']
-  ): keyof StudentEmotion['emotions'] {
-    
+  private determinePrimaryEmotion(scores: StudentEmotion['emotions']): keyof StudentEmotion['emotions'] {
     let maxScore = 0;
     let primaryEmotion: keyof StudentEmotion['emotions'] = 'neutral';
     
     Object.entries(scores).forEach(([emotion, score]) => {
-      if (score > maxScore && score > this.config.minConfidenceThreshold) {
+      if (score > maxScore) {
         maxScore = score;
         primaryEmotion = emotion as keyof StudentEmotion['emotions'];
       }
     });
     
-    // Default to neutral if no emotion meets confidence threshold
-    if (maxScore < this.config.neutralConfidenceThreshold) {
-      primaryEmotion = 'neutral';
+    // Only return non-neutral if confidence is high enough
+    if (primaryEmotion !== 'neutral' && maxScore < this.config.minConfidenceThreshold) {
+      // Check if neutral is close
+      if (scores.neutral > maxScore * 0.8) {
+        return 'neutral';
+      }
     }
     
     return primaryEmotion;
   }
-  
+
   /**
-   * Calculate Valence-Arousal-Dominance (VAD) values
+   * Calculate VAD (Valence-Arousal-Dominance)
    */
   private calculateVAD(
     scores: StudentEmotion['emotions'],
-    aus: FacialActionUnits
+    features: FacialFeatures
   ): { valence: number; arousal: number; dominance: number } {
     
-    // Valence: positive (happy, engaged) vs negative (frustrated, bored)
+    // Valence: positive (engaged/happy) vs negative (frustrated/bored)
     const valence = 
-      scores.engaged * 0.8 +
-      scores.focused * 0.6 +
+      scores.engaged * 0.9 +      // Happy/smiling is very positive
+      scores.focused * 0.3 +
       scores.neutral * 0.0 +
-      scores.confused * (-0.2) +
-      scores.bored * (-0.6) +
-      scores.frustrated * (-0.8) +
-      scores.drowsy * (-0.4);
-    
-    // Arousal: high energy (engaged, frustrated) vs low energy (bored, drowsy)
-    const arousal = 
-      scores.engaged * 0.8 +
-      scores.frustrated * 0.7 +
-      scores.confused * 0.5 +
-      scores.focused * 0.4 +
-      scores.neutral * 0.0 +
+      scores.confused * (-0.3) +
       scores.bored * (-0.5) +
-      scores.drowsy * (-0.8);
+      scores.frustrated * (-0.7) +
+      scores.drowsy * (-0.3);
+    
+    // Arousal: high energy vs low energy
+    const arousal = 
+      scores.engaged * 0.8 +      // Smiling/laughing is high arousal
+      scores.frustrated * 0.6 +
+      scores.confused * 0.4 +
+      scores.focused * 0.3 +
+      scores.neutral * 0.0 +
+      scores.bored * (-0.4) +
+      scores.drowsy * (-0.7);
     
     // Dominance: confident vs submissive
     const dominance = 
-      scores.engaged * 0.6 +
+      scores.engaged * 0.5 +
       scores.focused * 0.4 +
-      scores.frustrated * 0.3 +
+      scores.frustrated * 0.2 +
       scores.neutral * 0.0 +
-      scores.confused * (-0.4) +
-      scores.bored * (-0.3) +
-      scores.drowsy * (-0.6);
+      scores.confused * (-0.3) +
+      scores.bored * (-0.2) +
+      scores.drowsy * (-0.4);
     
     return {
       valence: Math.max(-1, Math.min(1, valence)),
-      arousal: Math.max(0, Math.min(1, arousal + 1) / 2), // Normalize to 0-1
-      dominance: Math.max(0, Math.min(1, dominance + 1) / 2), // Normalize to 0-1
+      arousal: Math.max(0, Math.min(1, (arousal + 1) / 2)),
+      dominance: Math.max(0, Math.min(1, (dominance + 1) / 2)),
     };
   }
-  
+
   /**
    * Calculate overall confidence
    */
-  private calculateOverallConfidence(
+  private calculateConfidence(
     scores: StudentEmotion['emotions'],
+    features: FacialFeatures,
     faceConfidence: number
   ): number {
-    
-    // Find the highest emotion score
+    // Max emotion score indicates how clear the expression is
     const maxScore = Math.max(...Object.values(scores));
     
-    // Calculate confidence based on max score and face quality
-    const emotionConfidence = maxScore;
-    const overallConfidence = (emotionConfidence * 0.7 + faceConfidence * 0.3);
+    // Feature clarity (are features well-defined?)
+    const featureClarity = Math.min(1, 
+      (features.faceWidth / 100) * 0.3 +
+      (features.faceHeight / 150) * 0.3 +
+      0.4
+    );
     
-    return Math.max(0, Math.min(1, overallConfidence));
+    // Combined confidence
+    const confidence = maxScore * 0.5 + faceConfidence * 0.3 + featureClarity * 0.2;
+    
+    return Math.max(0.1, Math.min(1, confidence));
   }
-  
+
   /**
-   * Apply temporal smoothing to emotion
+   * Apply temporal smoothing
    */
   private applyTemporalSmoothing(emotion: StudentEmotion): StudentEmotion {
     if (this.emotionHistory.length === 0) {
@@ -425,328 +658,73 @@ export class EmotionRecognizer {
     // Smooth emotion scores
     const smoothedScores: StudentEmotion['emotions'] = {} as StudentEmotion['emotions'];
     Object.keys(emotion.emotions).forEach(key => {
-      const emotionKey = key as keyof StudentEmotion['emotions'];
-      smoothedScores[emotionKey] = 
-        alpha * emotion.emotions[emotionKey] + 
-        (1 - alpha) * previous.emotions[emotionKey];
+      const k = key as keyof StudentEmotion['emotions'];
+      smoothedScores[k] = alpha * emotion.emotions[k] + (1 - alpha) * previous.emotions[k];
     });
     
-    // Smooth VAD values
-    const smoothedEmotion: StudentEmotion = {
+    // Re-determine primary emotion from smoothed scores
+    const primaryEmotion = this.determinePrimaryEmotion(smoothedScores);
+    
+    return {
       valence: alpha * emotion.valence + (1 - alpha) * previous.valence,
       arousal: alpha * emotion.arousal + (1 - alpha) * previous.arousal,
       dominance: alpha * emotion.dominance + (1 - alpha) * previous.dominance,
       emotions: smoothedScores,
-      primaryEmotion: this.determinePrimaryEmotion(smoothedScores),
-      confidence: Math.max(emotion.confidence, previous.confidence * 0.9),
+      primaryEmotion,
+      confidence: Math.max(emotion.confidence, previous.confidence * 0.95),
     };
-    
-    return smoothedEmotion;
   }
-  
+
   /**
-   * Update emotion and AU history
+   * Update history
    */
-  private updateHistory(emotion: StudentEmotion, aus: FacialActionUnits): void {
+  private updateHistory(emotion: StudentEmotion, features: FacialFeatures): void {
     this.emotionHistory.push(emotion);
-    this.auHistory.push(aus);
+    this.featureHistory.push(features);
     
-    // Maintain window size
-    if (this.emotionHistory.length > this.config.temporalWindowSize) {
+    while (this.emotionHistory.length > this.config.temporalWindowSize) {
       this.emotionHistory.shift();
-      this.auHistory.shift();
+      this.featureHistory.shift();
     }
   }
-  
-  // Action Unit calculation methods (simplified implementations)
-  // In production, these would use more sophisticated geometric analysis
-  
-  private calculateInnerBrowRaise(landmarks: Point[]): number {
-    const leftInner = landmarks[EMOTION_LANDMARKS.leftEyebrowInner];
-    const rightInner = landmarks[EMOTION_LANDMARKS.rightEyebrowInner];
-    const leftTop = landmarks[EMOTION_LANDMARKS.leftEyeTop];
-    const rightTop = landmarks[EMOTION_LANDMARKS.rightEyeTop];
-    
-    if (!leftInner || !rightInner || !leftTop || !rightTop) return 0;
-    
-    const leftRaise = (leftInner.y - leftTop.y) / 50; // Normalize
-    const rightRaise = (rightInner.y - rightTop.y) / 50;
-    
-    return Math.max(0, Math.min(1, (leftRaise + rightRaise) / 2));
-  }
-  
-  private calculateOuterBrowRaise(landmarks: Point[]): number {
-    const leftOuter = landmarks[EMOTION_LANDMARKS.leftEyebrowOuter];
-    const rightOuter = landmarks[EMOTION_LANDMARKS.rightEyebrowOuter];
-    const leftTop = landmarks[EMOTION_LANDMARKS.leftEyeTop];
-    const rightTop = landmarks[EMOTION_LANDMARKS.rightEyeTop];
-    
-    if (!leftOuter || !rightOuter || !leftTop || !rightTop) return 0;
-    
-    const leftRaise = (leftOuter.y - leftTop.y) / 50;
-    const rightRaise = (rightOuter.y - rightTop.y) / 50;
-    
-    return Math.max(0, Math.min(1, (leftRaise + rightRaise) / 2));
-  }
-  
-  private calculateBrowLower(landmarks: Point[]): number {
-    const leftBrow = landmarks[EMOTION_LANDMARKS.leftEyebrowTop];
-    const rightBrow = landmarks[EMOTION_LANDMARKS.rightEyebrowTop];
-    const leftEye = landmarks[EMOTION_LANDMARKS.leftEyeTop];
-    const rightEye = landmarks[EMOTION_LANDMARKS.rightEyeTop];
-    
-    if (!leftBrow || !rightBrow || !leftEye || !rightEye) return 0;
-    
-    const leftDistance = Math.abs(leftBrow.y - leftEye.y);
-    const rightDistance = Math.abs(rightBrow.y - rightEye.y);
-    const avgDistance = (leftDistance + rightDistance) / 2;
-    
-    // Lower values indicate brow lowering
-    return Math.max(0, Math.min(1, 1 - (avgDistance / 30)));
-  }
-  
-  private calculateUpperLidRaise(landmarks: Point[]): number {
-    const leftTop = landmarks[EMOTION_LANDMARKS.leftEyeTop];
-    const leftBottom = landmarks[EMOTION_LANDMARKS.leftEyeBottom];
-    const rightTop = landmarks[EMOTION_LANDMARKS.rightEyeTop];
-    const rightBottom = landmarks[EMOTION_LANDMARKS.rightEyeBottom];
-    
-    if (!leftTop || !leftBottom || !rightTop || !rightBottom) return 0;
-    
-    const leftHeight = Math.abs(leftTop.y - leftBottom.y);
-    const rightHeight = Math.abs(rightTop.y - rightBottom.y);
-    const avgHeight = (leftHeight + rightHeight) / 2;
-    
-    // Normalize eye opening (higher values = more open)
-    return Math.max(0, Math.min(1, avgHeight / 20));
-  }
-  
-  private calculateCheekRaise(landmarks: Point[]): number {
-    const leftCheek = landmarks[EMOTION_LANDMARKS.leftCheek];
-    const rightCheek = landmarks[EMOTION_LANDMARKS.rightCheek];
-    const leftEye = landmarks[EMOTION_LANDMARKS.leftEyeBottom];
-    const rightEye = landmarks[EMOTION_LANDMARKS.rightEyeBottom];
-    
-    if (!leftCheek || !rightCheek || !leftEye || !rightEye) return 0;
-    
-    const leftRaise = Math.max(0, leftEye.y - leftCheek.y);
-    const rightRaise = Math.max(0, rightEye.y - rightCheek.y);
-    
-    return Math.max(0, Math.min(1, (leftRaise + rightRaise) / 40));
-  }
-  
-  private calculateLidTighten(landmarks: Point[]): number {
-    // Simplified: based on eye aspect ratio
-    return 1 - this.calculateUpperLidRaise(landmarks);
-  }
-  
-  private calculateNoseWrinkle(landmarks: Point[]): number {
-    // Simplified: based on nose landmark positions
-    const noseTip = landmarks[EMOTION_LANDMARKS.noseTip];
-    const noseLeft = landmarks[EMOTION_LANDMARKS.noseLeft];
-    const noseRight = landmarks[EMOTION_LANDMARKS.noseRight];
-    
-    if (!noseTip || !noseLeft || !noseRight) return 0;
-    
-    const noseWidth = Math.abs(noseRight.x - noseLeft.x);
-    return Math.max(0, Math.min(1, (noseWidth - 20) / 10)); // Normalize
-  }
-  
-  private calculateUpperLipRaise(landmarks: Point[]): number {
-    const upperLip = landmarks[EMOTION_LANDMARKS.upperLipTop];
-    const noseTip = landmarks[EMOTION_LANDMARKS.noseTip];
-    
-    if (!upperLip || !noseTip) return 0;
-    
-    const distance = Math.abs(upperLip.y - noseTip.y);
-    return Math.max(0, Math.min(1, 1 - (distance / 30)));
-  }
-  
-  private calculateLipCornerPull(landmarks: Point[]): number {
-    const leftCorner = landmarks[EMOTION_LANDMARKS.lipCornerLeft];
-    const rightCorner = landmarks[EMOTION_LANDMARKS.lipCornerRight];
-    const mouthTop = landmarks[EMOTION_LANDMARKS.mouthTop];
-    
-    if (!leftCorner || !rightCorner || !mouthTop) return 0;
-    
-    // Calculate smile curvature
-    const leftPull = Math.max(0, mouthTop.y - leftCorner.y);
-    const rightPull = Math.max(0, mouthTop.y - rightCorner.y);
-    
-    return Math.max(0, Math.min(1, (leftPull + rightPull) / 20));
-  }
-  
-  private calculateLipCornerDepress(landmarks: Point[]): number {
-    const leftCorner = landmarks[EMOTION_LANDMARKS.lipCornerLeft];
-    const rightCorner = landmarks[EMOTION_LANDMARKS.lipCornerRight];
-    const mouthBottom = landmarks[EMOTION_LANDMARKS.mouthBottom];
-    
-    if (!leftCorner || !rightCorner || !mouthBottom) return 0;
-    
-    // Calculate frown curvature
-    const leftDepress = Math.max(0, leftCorner.y - mouthBottom.y);
-    const rightDepress = Math.max(0, rightCorner.y - mouthBottom.y);
-    
-    return Math.max(0, Math.min(1, (leftDepress + rightDepress) / 20));
-  }
-  
-  private calculateLowerLipDepress(landmarks: Point[]): number {
-    const lowerLip = landmarks[EMOTION_LANDMARKS.lowerLipBottom];
-    const chin = landmarks[EMOTION_LANDMARKS.chin];
-    
-    if (!lowerLip || !chin) return 0;
-    
-    const distance = Math.abs(lowerLip.y - chin.y);
-    return Math.max(0, Math.min(1, 1 - (distance / 40)));
-  }
-  
-  private calculateChinRaise(landmarks: Point[]): number {
-    const chin = landmarks[EMOTION_LANDMARKS.chin];
-    const mouthBottom = landmarks[EMOTION_LANDMARKS.mouthBottom];
-    
-    if (!chin || !mouthBottom) return 0;
-    
-    const distance = Math.abs(chin.y - mouthBottom.y);
-    return Math.max(0, Math.min(1, 1 - (distance / 30)));
-  }
-  
-  private calculateLipStretch(landmarks: Point[]): number {
-    const leftCorner = landmarks[EMOTION_LANDMARKS.lipCornerLeft];
-    const rightCorner = landmarks[EMOTION_LANDMARKS.lipCornerRight];
-    
-    if (!leftCorner || !rightCorner) return 0;
-    
-    const width = Math.abs(rightCorner.x - leftCorner.x);
-    return Math.max(0, Math.min(1, (width - 40) / 20)); // Normalize
-  }
-  
-  private calculateLipTighten(landmarks: Point[]): number {
-    const upperLip = landmarks[EMOTION_LANDMARKS.upperLipBottom];
-    const lowerLip = landmarks[EMOTION_LANDMARKS.lowerLipTop];
-    
-    if (!upperLip || !lowerLip) return 0;
-    
-    const thickness = Math.abs(upperLip.y - lowerLip.y);
-    return Math.max(0, Math.min(1, 1 - (thickness / 10)));
-  }
-  
-  private calculateLipPress(landmarks: Point[]): number {
-    // Similar to lip tighten but more extreme
-    return this.calculateLipTighten(landmarks) * 1.2;
-  }
-  
-  private calculateLipsPart(landmarks: Point[]): number {
-    const upperLip = landmarks[EMOTION_LANDMARKS.upperLipBottom];
-    const lowerLip = landmarks[EMOTION_LANDMARKS.lowerLipTop];
-    
-    if (!upperLip || !lowerLip) return 0;
-    
-    const opening = Math.abs(upperLip.y - lowerLip.y);
-    return Math.max(0, Math.min(1, opening / 15));
-  }
-  
-  private calculateJawDrop(landmarks: Point[]): number {
-    const mouthBottom = landmarks[EMOTION_LANDMARKS.mouthBottom];
-    const chin = landmarks[EMOTION_LANDMARKS.chin];
-    
-    if (!mouthBottom || !chin) return 0;
-    
-    const distance = Math.abs(mouthBottom.y - chin.y);
-    return Math.max(0, Math.min(1, (distance - 20) / 30));
-  }
-  
-  private calculateMouthStretch(landmarks: Point[]): number {
-    // Combination of lip stretch and jaw drop
-    return (this.calculateLipStretch(landmarks) + this.calculateJawDrop(landmarks)) / 2;
-  }
-  
-  // Head movement calculations (simplified)
-  private calculateHeadTurnLeft(landmarks: Point[]): number {
-    const noseTip = landmarks[EMOTION_LANDMARKS.noseTip];
-    const leftEye = landmarks[EMOTION_LANDMARKS.leftEyeLeft];
-    const rightEye = landmarks[EMOTION_LANDMARKS.rightEyeRight];
-    
-    if (!noseTip || !leftEye || !rightEye) return 0;
-    
-    const eyeCenter = { x: (leftEye.x + rightEye.x) / 2, y: (leftEye.y + rightEye.y) / 2 };
-    const offset = noseTip.x - eyeCenter.x;
-    
-    return Math.max(0, Math.min(1, -offset / 20)); // Negative offset = left turn
-  }
-  
-  private calculateHeadTurnRight(landmarks: Point[]): number {
-    const noseTip = landmarks[EMOTION_LANDMARKS.noseTip];
-    const leftEye = landmarks[EMOTION_LANDMARKS.leftEyeLeft];
-    const rightEye = landmarks[EMOTION_LANDMARKS.rightEyeRight];
-    
-    if (!noseTip || !leftEye || !rightEye) return 0;
-    
-    const eyeCenter = { x: (leftEye.x + rightEye.x) / 2, y: (leftEye.y + rightEye.y) / 2 };
-    const offset = noseTip.x - eyeCenter.x;
-    
-    return Math.max(0, Math.min(1, offset / 20)); // Positive offset = right turn
-  }
-  
-  private calculateHeadUp(landmarks: Point[]): number {
-    const noseTip = landmarks[EMOTION_LANDMARKS.noseTip];
-    const chin = landmarks[EMOTION_LANDMARKS.chin];
-    
-    if (!noseTip || !chin) return 0;
-    
-    const faceHeight = Math.abs(noseTip.y - chin.y);
-    return Math.max(0, Math.min(1, 1 - (faceHeight / 100))); // Shorter face = head up
-  }
-  
-  private calculateHeadDown(landmarks: Point[]): number {
-    const noseTip = landmarks[EMOTION_LANDMARKS.noseTip];
-    const chin = landmarks[EMOTION_LANDMARKS.chin];
-    
-    if (!noseTip || !chin) return 0;
-    
-    const faceHeight = Math.abs(noseTip.y - chin.y);
-    return Math.max(0, Math.min(1, (faceHeight - 80) / 40)); // Longer face = head down
-  }
-  
-  private calculateHeadTiltLeft(landmarks: Point[]): number {
-    const leftEye = landmarks[EMOTION_LANDMARKS.leftEyeLeft];
-    const rightEye = landmarks[EMOTION_LANDMARKS.rightEyeRight];
-    
-    if (!leftEye || !rightEye) return 0;
-    
-    const eyeAngle = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x);
-    return Math.max(0, Math.min(1, -eyeAngle / (Math.PI / 4))); // Negative angle = left tilt
-  }
-  
-  private calculateHeadTiltRight(landmarks: Point[]): number {
-    const leftEye = landmarks[EMOTION_LANDMARKS.leftEyeLeft];
-    const rightEye = landmarks[EMOTION_LANDMARKS.rightEyeRight];
-    
-    if (!leftEye || !rightEye) return 0;
-    
-    const eyeAngle = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x);
-    return Math.max(0, Math.min(1, eyeAngle / (Math.PI / 4))); // Positive angle = right tilt
-  }
-  
+
   /**
-   * Reset temporal state
+   * Get default emotion when detection fails
+   */
+  private getDefaultEmotion(): StudentEmotion {
+    return {
+      valence: 0,
+      arousal: 0.5,
+      dominance: 0.5,
+      emotions: {
+        engaged: 0,
+        confused: 0,
+        bored: 0,
+        frustrated: 0,
+        focused: 0,
+        drowsy: 0,
+        neutral: 1,
+      },
+      primaryEmotion: 'neutral',
+      confidence: 0.3,
+    };
+  }
+
+  /**
+   * Reset state
    */
   public reset(): void {
     this.emotionHistory = [];
-    this.auHistory = [];
+    this.featureHistory = [];
+    this.baselineFeatures = null;
+    this.frameCount = 0;
   }
-  
+
   /**
-   * Get current emotion history for analysis
+   * Get emotion history
    */
   public getEmotionHistory(): StudentEmotion[] {
     return [...this.emotionHistory];
-  }
-  
-  /**
-   * Get current action unit history for analysis
-   */
-  public getActionUnitHistory(): FacialActionUnits[] {
-    return [...this.auHistory];
   }
 }
 
