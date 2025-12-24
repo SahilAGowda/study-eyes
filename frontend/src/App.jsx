@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
-import { WebSocketProvider } from './contexts/WebSocketContext'
+// WebSocketProvider removed - reserved for new StudyEye implementation
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import PrivateRoute from './components/common/PrivateRoute'
 import Layout from './components/common/Layout'
@@ -278,7 +278,7 @@ function App() {
       <AuthProvider>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <WebSocketProvider>
+          {/* WebSocketProvider removed - reserved for new StudyEye implementation */}
             <Routes>
               {/* Public Routes */}
               {publicRoutes.map(({ path, element: Element }) => (
@@ -347,7 +347,7 @@ function App() {
               {/* Default redirect based on role */}
               <Route path="*" element={<RoleBasedRedirect />} />
             </Routes>
-          </WebSocketProvider>
+          {/* WebSocketProvider removed - reserved for new StudyEye implementation */}
         </ThemeProvider>
       </AuthProvider>
     </Router>

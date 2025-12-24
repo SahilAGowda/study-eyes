@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.database import db
 from models.user import User
-from models.session import StudySession
+# StudySession model removed - reserved for new StudyEye implementation
 from models.analytics import UserAnalytics
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc
@@ -97,11 +97,9 @@ def get_dashboard_data():
             db.session.add(today_analytics)
             today_analytics.calculate_daily_metrics()
         
-        # Get current active session
-        active_session = StudySession.query.filter_by(
-            user_id=user_id, 
-            is_active=True
-        ).first()
+        # Session queries removed - reserved for new StudyEye implementation
+        # active_session = StudySession.query.filter_by(user_id=user_id, is_active=True).first()
+        # recent_sessions = StudySession.query.filter_by(user_id=user_id).order_by(desc(StudySession.start_time)).limit(5).all()
         
         # Get this week's data
         week_start = today - timedelta(days=today.weekday())
@@ -115,16 +113,10 @@ def get_dashboard_data():
             'productivity_score': sum([a['productivity_score'] for a in week_analytics]) / len(week_analytics) if week_analytics else 0
         }
         
-        # Get recent sessions
-        recent_sessions = StudySession.query.filter_by(
-            user_id=user_id
-        ).order_by(desc(StudySession.start_time)).limit(5).all()
-        
         return jsonify({
             'today': today_analytics.to_dict(),
             'weekly': weekly_totals,
-            'active_session': active_session.to_dict() if active_session else None,
-            'recent_sessions': [session.to_dict() for session in recent_sessions]
+            # active_session and recent_sessions removed - reserved for new StudyEye implementation
         }), 200
         
     except Exception as e:

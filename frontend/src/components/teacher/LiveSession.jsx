@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Container,
   Grid,
@@ -13,11 +13,8 @@ import {
   Alert,
   Chip,
   Divider,
-  IconButton,
-  Tooltip,
   Stack,
   Avatar,
-  CircularProgress,
 } from '@mui/material'
 import {
   Stop as StopIcon,
@@ -26,26 +23,19 @@ import {
   Timer as TimerIcon,
   Visibility as EyeIcon,
   People as PeopleIcon,
-  NotificationImportant as AlertIcon,
   Videocam as CameraIcon,
   VideocamOff as CameraOffIcon,
-  Refresh as RefreshIcon,
-  VideoCall as LiveIcon,
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
   CheckCircle as CheckIcon,
   Error as ErrorIcon,
-  Warning as WarningIcon,
-  Fullscreen as FullscreenIcon,
-  Settings as SettingsIcon,
 } from '@mui/icons-material'
-import cameraService from '../../services/cameraService'
-import CameraOverlay from '../student/CameraOverlay'
+
+// This component has been cleaned and is reserved for the new StudyEye implementation.
+// Camera and monitoring services have been removed.
 
 const LiveSession = () => {
   const navigate = useNavigate()
-  const location = useLocation()
-  const videoRef = useRef(null)
 
   const [classInfo, setClassInfo] = useState({
     title: 'Live Class Session',
@@ -55,22 +45,8 @@ const LiveSession = () => {
   const [isLive, setIsLive] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
   const [sessionTime, setSessionTime] = useState(0)
-  const [cameraEnabled, setCameraEnabled] = useState(false)
-  const [cameraError, setCameraError] = useState(null)
-  const [isConnected, setIsConnected] = useState(false)
   const [activeStudents, setActiveStudents] = useState(0)
   const [studentEngagement, setStudentEngagement] = useState(0)
-  const [eyeTrackingData, setEyeTrackingData] = useState(null)
-  const [alerts, setAlerts] = useState([])
-
-  useEffect(() => {
-    initializeCamera()
-    return () => {
-      if (cameraService.isActiveCamera()) {
-        cameraService.stopCamera()
-      }
-    }
-  }, [])
 
   useEffect(() => {
     let interval
@@ -81,25 +57,6 @@ const LiveSession = () => {
     }
     return () => clearInterval(interval)
   }, [isLive, isPaused])
-
-  const initializeCamera = async () => {
-    try {
-      if (videoRef.current) {
-        await cameraService.initializeCamera(videoRef.current)
-        setCameraEnabled(true)
-        setCameraError(null)
-      }
-    } catch (error) {
-      console.error('Camera initialization failed:', error)
-      setCameraError(error.message)
-      setCameraEnabled(false)
-    }
-  }
-
-  const handleCameraRestart = async () => {
-    setCameraError(null)
-    await initializeCamera()
-  }
 
   const handleStartLive = () => {
     setIsLive(true)
@@ -142,7 +99,7 @@ const LiveSession = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Session Header - Glassmorphic Style */}
+      {/* Session Header */}
       <Paper 
         elevation={3} 
         sx={{ 
@@ -190,33 +147,11 @@ const LiveSession = () => {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            {/* Camera Status */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1,
-              background: 'rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '10px',
-              padding: '8px 12px',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-            }}>
-              {cameraEnabled ? (
-                <CameraIcon sx={{ color: '#4caf50' }} />
-              ) : (
-                <CameraOffIcon sx={{ color: '#f44336' }} />
-              )}
-              <Typography variant="body2" color="text.secondary">
-                {cameraEnabled ? 'Camera Active' : 'Camera Disabled'}
-              </Typography>
-            </Box>
-            
             {!isLive ? (
               <Button
                 variant="contained"
                 startIcon={<PlayIcon />}
                 onClick={handleStartLive}
-                disabled={!cameraEnabled}
                 size="large"
                 sx={{
                   background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
@@ -372,7 +307,7 @@ const LiveSession = () => {
         </Grid>
       </Grid>
 
-      {/* Enhanced Camera Feed - Glassmorphic Style */}
+      {/* Placeholder for Camera Feed - Reserved for new StudyEye implementation */}
       <Paper 
         elevation={4} 
         sx={{ 
@@ -383,149 +318,20 @@ const LiveSession = () => {
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(156, 39, 176, 0.3)',
           borderRadius: '24px',
-          position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '4px',
-            background: 'linear-gradient(90deg, #9c27b0, #3f51b5)',
-          },
-          '&:hover': {
-            transform: 'translateY(-3px)',
-            boxShadow: '0 25px 50px rgba(156, 39, 176, 0.25)',
-            borderColor: 'rgba(156, 39, 176, 0.5)',
-          },
-          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          minHeight: '400px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <Typography 
-          variant="h5" 
-          gutterBottom
-          sx={{
-            fontWeight: 700,
-            background: 'linear-gradient(45deg, #9c27b0, #3f51b5)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            mb: 4,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 2,
-          }}
-        >
-          <CameraIcon sx={{ fontSize: '2rem', color: '#9c27b0' }} />
-          Teacher Camera Feed
-        </Typography>
-        
-        {/* Camera Status Alerts */}
-        {cameraError && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 4,
-              background: 'rgba(244, 67, 54, 0.15)',
-              backdropFilter: 'blur(15px)',
-              border: '1px solid rgba(244, 67, 54, 0.4)',
-              borderRadius: '16px',
-              fontSize: '1rem',
-              fontWeight: 500,
-            }}
-            icon={<CameraOffIcon sx={{ color: '#f44336' }} />}
-            action={
-              <Button 
-                color="inherit" 
-                size="small" 
-                startIcon={<RefreshIcon />}
-                onClick={handleCameraRestart}
-                sx={{ fontWeight: 600 }}
-              >
-                Retry
-              </Button>
-            }
-          >
-            Camera access failed. Please check permissions and try again.
-          </Alert>
-        )}
-        
-        {/* Enhanced Camera Container */}
-        <Box 
-          sx={{ 
-            position: 'relative', 
-            display: 'inline-block',
-            borderRadius: '24px',
-            overflow: 'hidden',
-            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.4)',
-            background: 'linear-gradient(145deg, rgba(156, 39, 176, 0.2), rgba(63, 81, 181, 0.2))',
-            p: 3,
-            border: '2px solid rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(20px)',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              boxShadow: '0 30px 70px rgba(0, 0, 0, 0.5)',
-              transform: 'scale(1.02)',
-            },
-          }}
-        >
-          {/* Video Element */}
-          <video
-            ref={videoRef}
-            style={{
-              width: '800px',
-              height: '600px',
-              borderRadius: '16px',
-              transform: 'scaleX(-1)',
-              backgroundColor: '#000000',
-              display: 'block',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              objectFit: 'cover',
-            }}
-            autoPlay
-            muted
-            playsInline
-          />
-          
-          {/* Camera Overlay */}
-          {cameraEnabled && <CameraOverlay eyeTrackingData={eyeTrackingData} />}
-          
-          {/* Live Indicator */}
-          {isLive && cameraEnabled && (
-            <Chip
-              label="🔴 LIVE"
-              color="error"
-              size="medium"
-              sx={{
-                position: 'absolute',
-                top: 20,
-                left: 20,
-                background: 'rgba(244, 67, 54, 0.95)',
-                backdropFilter: 'blur(15px)',
-                fontWeight: 700,
-                fontSize: '0.9rem',
-                boxShadow: '0 6px 25px rgba(244, 67, 54, 0.4)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                animation: 'livePulse 2s infinite',
-                '@keyframes livePulse': {
-                  '0%': { 
-                    transform: 'scale(1)',
-                    boxShadow: '0 6px 25px rgba(244, 67, 54, 0.4)',
-                  },
-                  '50%': { 
-                    transform: 'scale(1.05)',
-                    boxShadow: '0 8px 30px rgba(244, 67, 54, 0.6)',
-                  },
-                  '100%': { 
-                    transform: 'scale(1)',
-                    boxShadow: '0 6px 25px rgba(244, 67, 54, 0.4)',
-                  },
-                },
-              }}
-            />
-          )}
+        <Box>
+          <CameraOffIcon sx={{ fontSize: 80, color: '#9c27b0', mb: 2 }} />
+          <Typography variant="h5" sx={{ color: '#9c27b0', fontWeight: 600 }}>
+            Camera Feed Reserved
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'text.secondary', mt: 1 }}>
+            This area is reserved for the new StudyEye monitoring system
+          </Typography>
         </Box>
       </Paper>
 
@@ -585,15 +391,15 @@ const LiveSession = () => {
             </Typography>
             <Stack spacing={1}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {cameraEnabled ? <CheckIcon sx={{ fontSize: 18, color: '#4caf50' }} /> : <ErrorIcon sx={{ fontSize: 18, color: '#f44336' }} />}
-                <Typography variant="body2">Camera</Typography>
+                <ErrorIcon sx={{ fontSize: 18, color: '#757575' }} />
+                <Typography variant="body2">Camera (Awaiting StudyEye)</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {isConnected ? <CheckIcon sx={{ fontSize: 18, color: '#4caf50' }} /> : <ErrorIcon sx={{ fontSize: 18, color: '#f44336' }} />}
-                <Typography variant="body2">Connection</Typography>
+                <ErrorIcon sx={{ fontSize: 18, color: '#757575' }} />
+                <Typography variant="body2">Connection (Awaiting StudyEye)</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {isLive ? <CheckIcon sx={{ fontSize: 18, color: '#f44336' }} /> : <ErrorIcon sx={{ fontSize: 18, color: '#757575' }} />}
+                {isLive ? <CheckIcon sx={{ fontSize: 18, color: '#4caf50' }} /> : <ErrorIcon sx={{ fontSize: 18, color: '#757575' }} />}
                 <Typography variant="body2">{isLive ? 'Live' : 'Offline'}</Typography>
               </Box>
             </Stack>

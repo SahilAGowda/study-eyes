@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.database import db
 from models.user import User
-from models.session import StudySession
+# StudySession model removed - reserved for new StudyEye implementation
 from models.analytics import UserAnalytics
 from datetime import datetime, timedelta
 
@@ -23,16 +23,10 @@ def get_user_profile():
         if not user:
             return jsonify({'error': 'User not found'}), 404
         
-        # Get user statistics
-        total_sessions = StudySession.query.filter_by(user_id=user_id).count()
-        completed_sessions = StudySession.query.filter_by(
-            user_id=user_id, 
-            status='completed'
-        ).count()
-        
-        # Get total study time (all time)
-        sessions = StudySession.query.filter_by(user_id=user_id).all()
-        total_study_minutes = sum([s.actual_duration or 0 for s in sessions])
+        # Session statistics removed - reserved for new StudyEye implementation
+        total_sessions = 0
+        completed_sessions = 0
+        total_study_minutes = 0
         
         # Get recent analytics
         recent_analytics = UserAnalytics.query.filter_by(
@@ -204,52 +198,16 @@ def get_stats_summary():
     try:
         user_id = get_jwt_identity()
         
-        # Get all-time statistics
-        all_sessions = StudySession.query.filter_by(user_id=user_id).all()
+        # Session statistics removed - reserved for new StudyEye implementation
+        total_sessions = 0
+        completed_sessions = 0
+        total_study_time = 0
+        avg_focus = 0
         
-        # Basic counts
-        total_sessions = len(all_sessions)
-        completed_sessions = len([s for s in all_sessions if s.status == 'completed'])
-        total_study_time = sum([s.actual_duration or 0 for s in all_sessions])
-        
-        # Focus and productivity averages
-        completed_with_focus = [s for s in all_sessions if s.status == 'completed' and s.focus_percentage > 0]
-        avg_focus = sum([s.focus_percentage for s in completed_with_focus]) / len(completed_with_focus) if completed_with_focus else 0
-        
-        # Time-based statistics
         now = datetime.utcnow()
-        this_week_start = now.date() - timedelta(days=now.weekday())
-        this_month_start = now.date().replace(day=1)
-        
-        this_week_sessions = [s for s in all_sessions if s.start_time and s.start_time.date() >= this_week_start]
-        this_month_sessions = [s for s in all_sessions if s.start_time and s.start_time.date() >= this_month_start]
-        
-        # Best day analysis
-        daily_stats = {}
-        for session in all_sessions:
-            if session.start_time:
-                date = session.start_time.date()
-                if date not in daily_stats:
-                    daily_stats[date] = {'sessions': 0, 'study_time': 0, 'focus_sum': 0, 'focus_count': 0}
-                
-                daily_stats[date]['sessions'] += 1
-                daily_stats[date]['study_time'] += session.actual_duration or 0
-                
-                if session.focus_percentage > 0:
-                    daily_stats[date]['focus_sum'] += session.focus_percentage
-                    daily_stats[date]['focus_count'] += 1
-        
+        this_week_sessions = []
+        this_month_sessions = []
         best_day = None
-        max_study_time = 0
-        for date, stats in daily_stats.items():
-            if stats['study_time'] > max_study_time:
-                max_study_time = stats['study_time']
-                best_day = {
-                    'date': date.isoformat(),
-                    'study_time_minutes': stats['study_time'],
-                    'sessions': stats['sessions'],
-                    'average_focus': stats['focus_sum'] / stats['focus_count'] if stats['focus_count'] > 0 else 0
-                }
         
         # Calculate current streak
         current_streak = 0

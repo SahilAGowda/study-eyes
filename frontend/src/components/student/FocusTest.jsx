@@ -12,7 +12,9 @@ import {
   LinearProgress
 } from '@mui/material'
 import { Videocam, VideocamOff } from '@mui/icons-material'
-import cameraService from '../../services/cameraService'
+
+// This component has been cleaned and is reserved for the new StudyEye implementation.
+// Camera service has been removed.
 
 function FocusTest() {
   const videoRef = useRef(null)
@@ -43,24 +45,10 @@ function FocusTest() {
   }, [isTracking])
 
   const startCamera = async () => {
-    try {
-      setCameraError(null)
-      console.log('Starting camera...')
-      
-      if (videoRef.current) {
-        await cameraService.initializeCamera(videoRef.current)
-        setCameraEnabled(true)
-        setIsTracking(true)
-        console.log('Camera and tracking started successfully')
-      }
-    } catch (error) {
-      console.error('Camera error:', error)
-      setCameraError(error.message)
-    }
+    setCameraError('Camera service removed - awaiting new StudyEye implementation')
   }
 
   const stopCamera = () => {
-    cameraService.stopCamera()
     setCameraEnabled(false)
     setIsTracking(false)
   }
@@ -78,175 +66,155 @@ function FocusTest() {
           Focus Detection Test
         </Typography>
         <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-          Test camera and eye tracking functionality without authentication
+          Test camera and eye tracking functionality (Awaiting new StudyEye implementation)
         </Typography>
+
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Camera and tracking services have been removed. This component is reserved for the new StudyEye monitoring system.
+        </Alert>
 
         {cameraError && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {cameraError}
-            <Button size="small" onClick={startCamera} sx={{ ml: 2 }}>
-              Retry
-            </Button>
           </Alert>
         )}
 
         <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-          {!cameraEnabled ? (
-            <Button
-              variant="contained"
-              startIcon={<Videocam />}
-              onClick={startCamera}
-              size="large"
-            >
-              Start Camera & Focus Detection
-            </Button>
-          ) : (
-            <Button
-              variant="contained"
-              color="error"
-              startIcon={<VideocamOff />}
-              onClick={stopCamera}
-              size="large"
-            >
-              Stop Camera
-            </Button>
-          )}
+          <Button
+            variant="contained"
+            startIcon={<Videocam />}
+            onClick={startCamera}
+            size="large"
+            disabled
+          >
+            Start Camera (Disabled)
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<VideocamOff />}
+            onClick={stopCamera}
+            size="large"
+            disabled={!cameraEnabled}
+          >
+            Stop Camera
+          </Button>
         </Box>
 
-        {cameraEnabled && (
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h6" gutterBottom>
-              Camera Preview
-            </Typography>
-            <video
-              ref={videoRef}
-              style={{
-                width: '320px',
-                height: '240px',
-                borderRadius: '8px',
-                transform: 'scaleX(-1)',
-                border: '2px solid #333'
-              }}
-              autoPlay
-              muted
-              playsInline
-            />
-          </Box>
-        )}
+        {/* Camera Feed Placeholder */}
+        <Box sx={{ mb: 4, textAlign: 'center' }}>
+          <video
+            ref={videoRef}
+            style={{
+              width: '640px',
+              height: '480px',
+              backgroundColor: '#000',
+              borderRadius: '8px',
+              transform: 'scaleX(-1)'
+            }}
+            autoPlay
+            muted
+            playsInline
+          />
+        </Box>
 
-        {isTracking && (
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={3}>
-              <Card sx={{ backgroundColor: '#1e1e1e' }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Attention Score
-                  </Typography>
-                  <Typography 
-                    variant="h3" 
-                    sx={{ color: getScoreColor(focusData.attentionScore), mb: 2 }}
-                  >
-                    {Math.round(focusData.attentionScore)}%
-                  </Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={focusData.attentionScore}
-                    sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      '& .MuiLinearProgress-bar': {
-                        backgroundColor: getScoreColor(focusData.attentionScore),
-                      }
-                    }}
-                  />
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={3}>
-              <Card sx={{ backgroundColor: '#1e1e1e' }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Eye Strain
-                  </Typography>
-                  <Typography 
-                    variant="h3" 
-                    sx={{ color: getScoreColor(100 - focusData.eyeStrain), mb: 2 }}
-                  >
-                    {Math.round(focusData.eyeStrain)}%
-                  </Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={focusData.eyeStrain}
-                    sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      '& .MuiLinearProgress-bar': {
-                        backgroundColor: getScoreColor(100 - focusData.eyeStrain),
-                      }
-                    }}
-                  />
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={3}>
-              <Card sx={{ backgroundColor: '#1e1e1e' }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Blink Rate
-                  </Typography>
-                  <Typography variant="h3" sx={{ color: '#2196f3', mb: 2 }}>
-                    {Math.round(focusData.blinkRate)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Blinks per minute
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={3}>
-              <Card sx={{ backgroundColor: '#1e1e1e' }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Screen Focus
-                  </Typography>
-                  <Typography 
-                    variant="h3" 
-                    sx={{ 
-                      color: focusData.lookingAtScreen ? '#4caf50' : '#f44336',
-                      mb: 2 
-                    }}
-                  >
-                    {focusData.lookingAtScreen ? 'YES' : 'NO'}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Looking at screen
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+        {/* Mock Focus Metrics */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Attention Score
+                </Typography>
+                <Typography 
+                  variant="h3" 
+                  sx={{ color: getScoreColor(focusData.attentionScore), mb: 2 }}
+                >
+                  {Math.round(focusData.attentionScore)}%
+                </Typography>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={focusData.attentionScore}
+                  sx={{
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: '#e0e0e0',
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: getScoreColor(focusData.attentionScore)
+                    }
+                  }}
+                />
+              </CardContent>
+            </Card>
           </Grid>
-        )}
 
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            Instructions:
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            1. Click "Start Camera & Focus Detection" to begin
-            <br />
-            2. Allow camera access when prompted
-            <br />
-            3. Look at the screen to see real-time focus tracking
-            <br />
-            4. The system will track your attention, eye strain, and blink rate
-          </Typography>
-        </Box>
-      </Paper>    </Container>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Eye Strain Level
+                </Typography>
+                <Typography 
+                  variant="h3" 
+                  sx={{ color: getScoreColor(100 - focusData.eyeStrain), mb: 2 }}
+                >
+                  {Math.round(focusData.eyeStrain)}%
+                </Typography>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={focusData.eyeStrain}
+                  sx={{
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: '#e0e0e0',
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: getScoreColor(100 - focusData.eyeStrain)
+                    }
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Blink Rate
+                </Typography>
+                <Typography variant="h3" sx={{ mb: 2 }}>
+                  {Math.round(focusData.blinkRate)} /min
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Normal range: 15-20 blinks per minute
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Looking at Screen
+                </Typography>
+                <Typography 
+                  variant="h3" 
+                  sx={{ 
+                    color: focusData.lookingAtScreen ? '#4caf50' : '#f44336',
+                    mb: 2 
+                  }}
+                >
+                  {focusData.lookingAtScreen ? 'Yes' : 'No'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Real-time gaze detection
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Paper>
+    </Container>
   )
 }
 

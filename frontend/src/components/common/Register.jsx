@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom'
 import {
   Container,
   Paper,
@@ -40,6 +40,8 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    e.stopPropagation()
+    
     setLoading(true)
     setError('')
 
@@ -50,31 +52,45 @@ const Register = () => {
     }
 
     try {
-      const { user, token } = await apiService.register(formData.username, formData.email, formData.password)
+      // Create registration data with required fields
+      // Since form doesn't have first_name/last_name, derive from username
+      const registrationData = {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.username, // Use username as first name
+        last_name: 'User', // Default last name
+        role: role // Role from URL
+      };
+      
+      console.log('Attempting registration...')
+      const response = await apiService.register(registrationData)
+      console.log('Registration response:', response)
+      
+      const { user, token, access_token } = response
+      const authToken = token || access_token
+      
+      if (!authToken) {
+        throw new Error('No authentication token received')
+      }
       
       console.log('Register response - user:', user)
       console.log('Register response - user.role:', user.role)
-      console.log('Expected role from URL:', role)
       
-      // TEMPORARY FIX: If backend doesn't return role, use the portal role
-      const userRole = user.role ? user.role.toLowerCase() : role.toLowerCase()
-      
-      console.log('User role (normalized):', userRole)
-      
-      // Prepare user data with role (use portal role if backend doesn't provide one)
+      // Prepare user data with token
       const userData = {
         ...user,
-        token,
-        role: userRole
+        token: authToken
       }
       
-      console.log('Registering user with role:', userRole)
+      console.log('Registering user with role:', user.role)
       
       // Login will automatically redirect based on role
       login(userData)
     } catch (err) {
-      setError(err.message || 'Registration failed')
-    } finally {
+      console.error('Registration error:', err)
+      const errorMessage = err.response?.data?.error || err.message || 'Registration failed'
+      setError(errorMessage)
       setLoading(false)
     }
   }
@@ -392,7 +408,8 @@ const Register = () => {
               >
                 Already have an account?{' '}
                 <Link 
-                  href={`/login?role=${role}`} 
+                  component={RouterLink}
+                  to={`/login?role=${role}`} 
                   variant="body1"
                   sx={{
                     color: '#2196f3',
