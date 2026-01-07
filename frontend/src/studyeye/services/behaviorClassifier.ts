@@ -57,7 +57,7 @@ const DEFAULT_CONFIG: BehaviorClassifierConfig = {
   minFaceConfidence: 0.7,  // Increased to 0.7 to ensure reliable face detection
   minSpeechConfidence: 0.6,
   minObjectConfidence: 0.5,
-  noteTakingPitchThreshold: -15, // Looking down 15+ degrees
+  noteTakingPitchThreshold: 15, // Looking down 15+ degrees (POSITIVE = looking down)
   smoothingWindowSize: 3,  // Reduced for faster reaction
   updateInterval: 1500, // 1.5 seconds delay before status change (FAST REACTION)
 };
@@ -366,7 +366,8 @@ export class BehaviorClassifier {
     objectData: ObjectDetectionResult[]
   ): { detected: boolean; confidence: number } {
     // Check if head is tilted down (looking at desk/paper)
-    const headDown = gazeData.headPose.pitch < this.config.noteTakingPitchThreshold;
+    // POSITIVE pitch = looking down (chin toward chest)
+    const headDown = gazeData.headPose.pitch > this.config.noteTakingPitchThreshold;
 
     // Check if writing-related objects are detected
     const writingObjects = objectData.filter(
@@ -380,7 +381,7 @@ export class BehaviorClassifier {
     if (headDown && hasWritingObjects) {
       // Calculate confidence based on head pose angle and object confidence
       const headPoseConfidence = Math.min(
-        Math.abs(gazeData.headPose.pitch / 45), // Normalize to 0-1
+        gazeData.headPose.pitch / 45, // Normalize to 0-1 (positive pitch)
         1.0
       );
       const objectConfidence = Math.max(...writingObjects.map(o => o.confidence));
@@ -390,12 +391,15 @@ export class BehaviorClassifier {
     }
 
     // Head down alone (without writing objects) suggests note-taking with lower confidence
+    // This makes note-taking detection less dependent on object detection
     if (headDown) {
       const headPoseConfidence = Math.min(
-        Math.abs(gazeData.headPose.pitch / 45),
+        gazeData.headPose.pitch / 45, // Normalize positive pitch
         1.0
       );
-      return { detected: true, confidence: headPoseConfidence * 0.6 };
+      // Higher confidence for more significant head tilt
+      const confidence = gazeData.headPose.pitch > 20 ? headPoseConfidence * 0.7 : headPoseConfidence * 0.5;
+      return { detected: true, confidence };
     }
 
     return { detected: false, confidence: 0 };

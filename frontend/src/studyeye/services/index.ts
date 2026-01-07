@@ -21,6 +21,7 @@ export { headPoseEstimator } from './headPoseEstimator';
 export { emotionRecognizer } from './emotionRecognizer';
 export { multiStudentTracker } from './multiStudentTracker';
 export { temporalBehaviorEngine } from './temporalBehaviorEngine';
+export { backendEmotionService } from './backendEmotionService';
 
 // Behavior Classification
 export { behaviorClassifier, BehaviorClassifier } from './behaviorClassifier';

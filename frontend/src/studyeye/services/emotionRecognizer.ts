@@ -15,6 +15,7 @@ export interface EmotionConfig {
   smoothingAlpha: number;
   minLandmarksRequired: number;
   faceQualityThreshold: number;
+  enableDebugLogging: boolean;
 }
 
 /**
@@ -115,9 +116,10 @@ export class EmotionRecognizer {
       minConfidenceThreshold: 0.3,
       neutralConfidenceThreshold: 0.25,
       temporalWindowSize: 8,
-      smoothingAlpha: 0.4,
+      smoothingAlpha: 0.55, // Increased from 0.4 for faster response to emotion changes
       minLandmarksRequired: 100,
       faceQualityThreshold: 0.5,
+      enableDebugLogging: false,
       ...config,
     };
   }
@@ -379,20 +381,24 @@ export class EmotionRecognizer {
     let score = 0;
     
     // Lip corner raise is the PRIMARY smile indicator
-    // Normalized lip corner raise > 0.02 indicates smile
-    const cornerRaiseScore = Math.min(1, features.lipCornerRaise * 15);
+    // Compare to baseline for better detection
+    const cornerRaiseFromBaseline = features.lipCornerRaise - (baseline.lipCornerRaise || 0);
+    const cornerRaiseScore = Math.min(1, Math.max(0, cornerRaiseFromBaseline * 20 + features.lipCornerRaise * 15));
     score += cornerRaiseScore * 0.35;
     
-    // Wide mouth (stretched horizontally)
+    // Wide mouth (stretched horizontally) - compare to baseline
     const mouthWidthRatio = features.mouthWidth / features.faceWidth;
-    const wideMouthScore = Math.min(1, Math.max(0, (mouthWidthRatio - 0.35) * 5));
+    const baselineMouthRatio = baseline.mouthWidth / baseline.faceWidth;
+    const mouthWidthIncrease = mouthWidthRatio - baselineMouthRatio;
+    const wideMouthScore = Math.min(1, Math.max(0, (mouthWidthRatio - 0.35) * 5 + mouthWidthIncrease * 3));
     score += wideMouthScore * 0.25;
     
     // Mouth openness (laughing = open mouth)
     score += features.mouthOpenness * 0.15;
     
-    // Cheek raise (Duchenne marker)
-    score += Math.min(1, features.cheekRaise * 8) * 0.15;
+    // Cheek raise (Duchenne marker) - compare to baseline
+    const cheekRaiseFromBaseline = features.cheekRaise - (baseline.cheekRaise || 0);
+    score += Math.min(1, (features.cheekRaise * 8 + cheekRaiseFromBaseline * 5)) * 0.15;
     
     // Eye squint (genuine smile narrows eyes)
     if (features.lipCornerRaise > 0.01) {
@@ -412,16 +418,27 @@ export class EmotionRecognizer {
     const mouthClosed = 1 - features.mouthOpenness;
     score += mouthClosed * 0.3;
     
-    // Slight brow activity (concentration)
+    // Slight brow activity (concentration) - compare to baseline
     const browActivity = (features.browFurrow + features.leftBrowRaise + features.rightBrowRaise) / 3;
+    const baselineBrowActivity = (baseline.browFurrow + baseline.leftBrowRaise + baseline.rightBrowRaise) / 3;
+    const browChange = Math.abs(browActivity - baselineBrowActivity);
     if (browActivity > 0.1 && browActivity < 0.5) {
       score += 0.3;
     }
+    // Slight increase from baseline also indicates focus
+    if (browChange > 0.05 && browChange < 0.3) {
+      score += 0.1;
+    }
     
-    // Eyes open and alert
+    // Eyes open and alert - compare to baseline
     const eyeOpenness = (features.leftEyeOpenness + features.rightEyeOpenness) / 2;
+    const baselineEyeOpenness = (baseline.leftEyeOpenness + baseline.rightEyeOpenness) / 2;
     if (eyeOpenness > 0.4 && eyeOpenness < 0.9) {
       score += 0.25;
+    }
+    // Eyes more open than baseline suggests alertness
+    if (eyeOpenness > baselineEyeOpenness * 0.95) {
+      score += 0.05;
     }
     
     // No smile (focused is not happy)
@@ -437,12 +454,15 @@ export class EmotionRecognizer {
   private calculateConfusedScore(features: FacialFeatures, baseline: FacialFeatures): number {
     let score = 0;
     
-    // Asymmetric brow raise
+    // Asymmetric brow raise - compare to baseline
     const browAsymmetry = Math.abs(features.leftBrowRaise - features.rightBrowRaise);
-    score += Math.min(1, browAsymmetry * 3) * 0.35;
+    const baselineBrowAsymmetry = Math.abs(baseline.leftBrowRaise - baseline.rightBrowRaise);
+    const asymmetryIncrease = browAsymmetry - baselineBrowAsymmetry;
+    score += Math.min(1, browAsymmetry * 3 + asymmetryIncrease * 2) * 0.35;
     
-    // Brow furrow
-    score += features.browFurrow * 0.25;
+    // Brow furrow - compare to baseline
+    const furrowIncrease = features.browFurrow - baseline.browFurrow;
+    score += (features.browFurrow * 0.7 + Math.max(0, furrowIncrease) * 0.3) * 0.25;
     
     // Slight mouth tension
     const mouthTension = 1 - features.mouthOpenness;
@@ -450,8 +470,9 @@ export class EmotionRecognizer {
       score += 0.2;
     }
     
-    // Squinted eyes (trying to understand)
-    score += features.eyeSquint * 0.2;
+    // Squinted eyes (trying to understand) - compare to baseline
+    const eyeSquintIncrease = features.eyeSquint - baseline.eyeSquint;
+    score += (features.eyeSquint * 0.7 + Math.max(0, eyeSquintIncrease) * 0.3) * 0.2;
     
     return Math.min(1, Math.max(0, score));
   }
@@ -462,20 +483,33 @@ export class EmotionRecognizer {
   private calculateBoredScore(features: FacialFeatures, baseline: FacialFeatures): number {
     let score = 0;
     
-    // Droopy/half-closed eyes
+    // Droopy/half-closed eyes - compare to baseline
     const avgEyeOpenness = (features.leftEyeOpenness + features.rightEyeOpenness) / 2;
+    const baselineEyeOpenness = (baseline.leftEyeOpenness + baseline.rightEyeOpenness) / 2;
+    const eyeDropFromBaseline = baselineEyeOpenness - avgEyeOpenness;
+    
     if (avgEyeOpenness < 0.5) {
       score += (0.5 - avgEyeOpenness) * 0.4;
     }
+    // Eyes drooping from baseline is a strong boredom indicator
+    if (eyeDropFromBaseline > 0.15) {
+      score += eyeDropFromBaseline * 0.3;
+    }
     
-    // Slack/neutral mouth
+    // Slack/neutral mouth - compare to baseline
     if (features.mouthOpenness < 0.2 && features.lipCornerRaise < 0.01) {
       score += 0.3;
     }
     
-    // Low brow activity
-    const lowBrowActivity = 1 - (features.browFurrow + features.leftBrowRaise + features.rightBrowRaise) / 3;
-    score += lowBrowActivity * 0.2;
+    // Low brow activity - compare to baseline
+    const browActivity = (features.browFurrow + features.leftBrowRaise + features.rightBrowRaise) / 3;
+    const baselineBrowActivity = (baseline.browFurrow + baseline.leftBrowRaise + baseline.rightBrowRaise) / 3;
+    const lowBrowActivity = 1 - browActivity;
+    // Less brow activity than baseline suggests disengagement
+    if (browActivity < baselineBrowActivity * 0.8) {
+      score += 0.15;
+    }
+    score += lowBrowActivity * 0.15;
     
     // No smile
     const noSmile = 1 - Math.min(1, features.lipCornerRaise * 10);
@@ -490,8 +524,9 @@ export class EmotionRecognizer {
   private calculateFrustratedScore(features: FacialFeatures, baseline: FacialFeatures): number {
     let score = 0;
     
-    // Strong brow furrow
-    score += features.browFurrow * 0.4;
+    // Strong brow furrow - compare to baseline
+    const furrowIncrease = features.browFurrow - baseline.browFurrow;
+    score += (features.browFurrow * 0.7 + Math.max(0, furrowIncrease) * 0.5) * 0.4;
     
     // Tight/pressed lips
     const tightLips = 1 - features.mouthOpenness;
@@ -499,38 +534,85 @@ export class EmotionRecognizer {
       score += 0.3;
     }
     
-    // Narrowed eyes (not from smiling)
+    // Narrowed eyes (not from smiling) - compare to baseline
+    const eyeNarrowFromBaseline = baseline.eyeSquint - features.eyeSquint;
     if (features.eyeSquint > 0.3 && features.lipCornerRaise < 0.01) {
       score += features.eyeSquint * 0.2;
     }
+    // Eyes narrowing from baseline without smile suggests frustration
+    if (eyeNarrowFromBaseline < -0.1 && features.lipCornerRaise < 0.01) {
+      score += 0.1;
+    }
     
-    // Lowered brows
-    const lowBrows = 1 - (features.leftBrowRaise + features.rightBrowRaise) / 2;
-    score += lowBrows * 0.1;
+    // Lowered brows - compare to baseline
+    const avgBrowRaise = (features.leftBrowRaise + features.rightBrowRaise) / 2;
+    const baselineAvgBrowRaise = (baseline.leftBrowRaise + baseline.rightBrowRaise) / 2;
+    const lowBrows = 1 - avgBrowRaise;
+    const browDrop = baselineAvgBrowRaise - avgBrowRaise;
+    score += lowBrows * 0.05;
+    if (browDrop > 0.1) {
+      score += browDrop * 0.15;
+    }
     
     return Math.min(1, Math.max(0, score));
   }
 
   /**
-   * Calculate drowsy score
+   * Calculate drowsy score - includes YAWNING DETECTION
    */
   private calculateDrowsyScore(features: FacialFeatures, baseline: FacialFeatures): number {
     let score = 0;
     
-    // Heavy/closing eyelids
+    // === YAWNING DETECTION (NEW - highest priority) ===
+    // Yawn = wide open mouth + eye squint + stretched face
+    const mouthHeightIncrease = baseline.mouthHeight > 0 
+      ? features.mouthHeight / baseline.mouthHeight 
+      : 1;
+    const isYawning = 
+      features.mouthOpenness > 0.5 &&           // Wide open mouth
+      mouthHeightIncrease > 1.3 &&              // Mouth stretched vertically (30% more than baseline)
+      features.eyeSquint > 0.25;                // Eyes squinting during yawn
+    
+    if (isYawning) {
+      score += 0.6; // Strong drowsy indicator - yawning is definitive
+      if (this.config.enableDebugLogging) {
+        console.log('[Emotion] YAWN DETECTED - mouthOpen:', features.mouthOpenness, 
+          'heightIncrease:', mouthHeightIncrease, 'eyeSquint:', features.eyeSquint);
+      }
+    }
+    
+    // Heavy/closing eyelids - compare to baseline
     const avgEyeOpenness = (features.leftEyeOpenness + features.rightEyeOpenness) / 2;
+    const baselineEyeOpenness = (baseline.leftEyeOpenness + baseline.rightEyeOpenness) / 2;
+    const eyeDropFromBaseline = baselineEyeOpenness - avgEyeOpenness;
+    
     if (avgEyeOpenness < 0.4) {
       score += (0.4 - avgEyeOpenness) * 0.5;
     }
-    
-    // Slack jaw/mouth slightly open
-    if (features.mouthOpenness > 0.1 && features.mouthOpenness < 0.4) {
-      score += 0.25;
+    // Eyes closing compared to baseline is a strong drowsy indicator
+    if (eyeDropFromBaseline > 0.2) {
+      score += eyeDropFromBaseline * 0.4;
     }
     
-    // Low facial activity overall
-    const lowActivity = 1 - (features.browFurrow + features.lipCornerRaise * 5 + features.cheekRaise * 3) / 3;
-    score += Math.max(0, lowActivity) * 0.25;
+    // Slack jaw/mouth slightly open (but not yawning)
+    if (!isYawning && features.mouthOpenness > 0.1 && features.mouthOpenness < 0.4) {
+      score += 0.2;
+    }
+    
+    // Low facial activity overall - compare to baseline
+    const currentActivity = features.browFurrow + features.lipCornerRaise * 5 + features.cheekRaise * 3;
+    const baselineActivity = baseline.browFurrow + baseline.lipCornerRaise * 5 + baseline.cheekRaise * 3;
+    const activityDrop = baselineActivity - currentActivity;
+    const lowActivity = 1 - currentActivity / 3;
+    score += Math.max(0, lowActivity) * 0.15;
+    if (activityDrop > 0.2) {
+      score += activityDrop * 0.15;
+    }
+    
+    if (this.config.enableDebugLogging && score > 0.3) {
+      console.log('[Emotion] Drowsy score:', score, 'eyeOpenness:', avgEyeOpenness, 
+        'eyeDrop:', eyeDropFromBaseline, 'isYawning:', isYawning);
+    }
     
     return Math.min(1, Math.max(0, score));
   }
@@ -539,7 +621,7 @@ export class EmotionRecognizer {
    * Calculate neutral score
    */
   private calculateNeutralScore(features: FacialFeatures, baseline: FacialFeatures): number {
-    // Neutral = low activity across all features
+    // Neutral = low activity across all features AND close to baseline
     const smileActivity = features.lipCornerRaise * 10;
     const browActivity = features.browFurrow + Math.abs(features.leftBrowRaise - 0.5) + Math.abs(features.rightBrowRaise - 0.5);
     const mouthActivity = features.mouthOpenness;
@@ -547,7 +629,17 @@ export class EmotionRecognizer {
     
     const totalActivity = (smileActivity + browActivity + mouthActivity + eyeActivity) / 4;
     
-    return Math.max(0, 1 - totalActivity * 2);
+    // Also check deviation from baseline - neutral should be close to baseline
+    const smileDeviation = Math.abs(features.lipCornerRaise - baseline.lipCornerRaise);
+    const browDeviation = Math.abs(features.browFurrow - baseline.browFurrow);
+    const mouthDeviation = Math.abs(features.mouthOpenness - baseline.mouthOpenness);
+    const totalDeviation = (smileDeviation * 10 + browDeviation + mouthDeviation) / 3;
+    
+    // High score when low activity AND close to baseline
+    const activityScore = Math.max(0, 1 - totalActivity * 2);
+    const deviationScore = Math.max(0, 1 - totalDeviation * 3);
+    
+    return (activityScore * 0.6 + deviationScore * 0.4);
   }
 
   /**

@@ -8,8 +8,9 @@ import { modelLoader } from './modelLoader';
  */
 class ObjectDetector {
   private model: cocoSsd.ObjectDetection | null = null;
-  private config: ObjectDetectorConfig = {
+  private config: ObjectDetectorConfig & { phoneConfidenceThreshold: number } = {
     confidenceThreshold: 0.5,
+    phoneConfidenceThreshold: 0.15, // Very low threshold for phones (webcam conditions are challenging)
     frameSkip: 2, // Process every 2-3 frames
   };
   private frameCounter: number = 0;
@@ -17,11 +18,12 @@ class ObjectDetector {
   private isProcessing: boolean = false;
 
   // Target object classes for detection
-  private readonly PHONE_CLASSES = ['cell phone'];
+  // Note: COCO-SSD sometimes detects phones as "remote" or "cell phone"
+  private readonly PHONE_CLASSES = ['cell phone', 'remote'];
   private readonly WRITING_CLASSES = ['book', 'pen', 'pencil'];
   private readonly TARGET_CLASSES = [...this.PHONE_CLASSES, ...this.WRITING_CLASSES];
 
-  constructor(config?: Partial<ObjectDetectorConfig>) {
+  constructor(config?: Partial<ObjectDetectorConfig & { phoneConfidenceThreshold: number }>) {
     if (config) {
       this.config = { ...this.config, ...config };
     }
@@ -85,15 +87,27 @@ class ObjectDetector {
         inputElement = imageData;
       }
 
-      // Run object detection
+      // Run object detection - get ALL predictions first for debugging
       const predictions = await this.model.detect(inputElement);
+      
+      // DEBUG: Log ALL raw predictions from COCO-SSD
+      if (predictions.length > 0) {
+        console.log('[ObjectDetector] RAW predictions:', predictions.map(p => 
+          `${p.class} (${(p.score * 100).toFixed(1)}%)`
+        ));
+      }
 
       // Filter and format detections
       const detections: ObjectDetectionResult[] = predictions
-        .filter(pred => 
-          pred.score >= this.config.confidenceThreshold &&
-          this.TARGET_CLASSES.includes(pred.class.toLowerCase())
-        )
+        .filter(pred => {
+          const objectClass = pred.class.toLowerCase();
+          const isPhone = this.PHONE_CLASSES.includes(objectClass);
+          // Use lower threshold for phones (harder to detect in webcam conditions)
+          const threshold = isPhone 
+            ? this.config.phoneConfidenceThreshold 
+            : this.config.confidenceThreshold;
+          return pred.score >= threshold && this.TARGET_CLASSES.includes(objectClass);
+        })
         .map(pred => ({
           objectType: pred.class.toLowerCase(),
           confidence: pred.score,

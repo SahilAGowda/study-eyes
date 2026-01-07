@@ -49,12 +49,12 @@ interface GazeEstimatorConfig {
  */
 class GazeEstimator {
   private config: GazeEstimatorConfig = {
-    maxYawForScreen: 45,     // 45 degrees left/right (more relaxed for natural movement)
-    maxPitchForScreen: 35,   // 35 degrees up/down (more relaxed for natural movement)
-    yawLeftThreshold: -25,   // Looking left threshold (more lenient)
-    yawRightThreshold: 25,   // Looking right threshold (more lenient)
-    pitchUpThreshold: -20,   // Looking up threshold (more lenient)
-    pitchDownThreshold: 20,  // Looking down threshold (more lenient)
+    maxYawForScreen: 25,     // 25 degrees left/right (tightened from 30)
+    maxPitchForScreen: 20,   // 20 degrees up/down (tightened from 25)
+    yawLeftThreshold: -18,   // Looking left threshold (tightened from -20)
+    yawRightThreshold: 18,   // Looking right threshold (tightened from 20)
+    pitchUpThreshold: -12,   // Looking up threshold (tightened from -15)
+    pitchDownThreshold: 12,  // Looking down threshold (tightened from 15)
     stabilityWindowSize: 10,
     smoothingAlpha: 0.5,     // Increased to 0.5 for better smoothing
     eyeDetectionConfidence: 0.65, // Minimum confidence for eye detection
@@ -486,12 +486,13 @@ class GazeEstimator {
   }
 
   /**
-   * Determine if user is looking at screen using EYE-BASED detection
+   * Determine if user is looking at screen using EYE-BASED detection + HEAD POSE
    * NEW RULES:
-   * - Both eyes detected AND inside box → Focused (high confidence)
+   * - Both eyes detected AND inside box AND head pose within thresholds → Focused (high confidence)
+   * - Head pose outside thresholds (looking up/down/left/right) → Looking Away
    * - One eye detected OR outside box → Distracted (medium confidence)
    * - No eyes detected → Looking Away (high confidence)
-   * @param headPose - Head pose angles (used for additional context)
+   * @param headPose - Head pose angles (CRITICAL for determining looking direction)
    * @param eyesDetected - Whether both eyes are detected
    * @param eyesInsideBoundingBox - Whether eyes are inside face bounding box
    * @param bothEyesDetected - Whether both individual eyes are detected
@@ -503,7 +504,30 @@ class GazeEstimator {
     eyesInsideBoundingBox: boolean,
     bothEyesDetected: boolean
   ): { isLookingAtScreen: boolean; confidence: number } {
-    // RULE 1: Both eyes detected AND inside box = Focused
+    const { pitch, yaw } = headPose;
+    
+    // CRITICAL: Check head pose FIRST - if head is turned away, user is NOT looking at screen
+    // regardless of eye detection
+    const isHeadTurnedAway = 
+      Math.abs(yaw) > this.config.maxYawForScreen ||  // Looking left/right
+      Math.abs(pitch) > this.config.maxPitchForScreen; // Looking up/down
+    
+    // Debug log for head pose
+    if (Math.abs(pitch) > 15 || Math.abs(yaw) > 15) {
+      console.log(`[GazeEstimator] Head pose: pitch=${pitch.toFixed(1)}°, yaw=${yaw.toFixed(1)}°, turnedAway=${isHeadTurnedAway}`);
+    }
+    
+    // RULE 0: Head turned significantly away = NOT looking at screen
+    if (isHeadTurnedAway) {
+      const confidence = Math.min(0.95, 0.7 + Math.abs(pitch) / 100 + Math.abs(yaw) / 100);
+      console.log(`[GazeEstimator] HEAD TURNED AWAY - pitch=${pitch.toFixed(1)}°, yaw=${yaw.toFixed(1)}° → NOT looking at screen`);
+      return {
+        isLookingAtScreen: false,
+        confidence,
+      };
+    }
+
+    // RULE 1: Both eyes detected AND inside box AND head facing forward = Focused
     if (bothEyesDetected && eyesInsideBoundingBox) {
       return {
         isLookingAtScreen: true,

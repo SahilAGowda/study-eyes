@@ -254,22 +254,35 @@ class ProcessingOrchestrator {
       const faceDetection = await faceDetector.detectFaces(this.videoElement);
       this.state.faceDetection = faceDetection;
 
+      // Object detection (run every 3 frames for phone/writing detection)
+      // CRITICAL: Must run BEFORE multi-student processing so objects are available
+      if (this.state.frameCount % 3 === 0) {
+        try {
+          this.state.objectDetections = await objectDetector.detectObjects(this.videoElement);
+          // Debug: Log ALL detections, not just phones
+          if (this.state.objectDetections.length > 0) {
+            console.log('[Object Detection] All detections:', 
+              this.state.objectDetections.map(o => `${o.objectType} (${(o.confidence * 100).toFixed(1)}%)`));
+          }
+          // Specific phone detection log
+          const phones = this.state.objectDetections.filter(o => o.objectType === 'cell phone');
+          if (phones.length > 0) {
+            console.log('[Phone Detection] PHONE FOUND:', phones.map(p => 
+              `confidence=${(p.confidence * 100).toFixed(1)}%, bbox=(${p.boundingBox.x.toFixed(0)},${p.boundingBox.y.toFixed(0)},${p.boundingBox.width.toFixed(0)}x${p.boundingBox.height.toFixed(0)})`
+            ));
+          }
+        } catch (error) {
+          console.warn('Object detection failed:', error);
+          this.state.objectDetections = [];
+        }
+      }
+
       if (this.config.enableMultiStudentTracking) {
         // Multi-student processing pipeline
         await this.processMultiStudentFrame(faceDetection);
       } else {
         // Legacy single-student processing
         await this.processSingleStudentFrame(faceDetection);
-      }
-
-      // Object detection (less frequent)
-      if (this.state.frameCount % 5 === 0) {
-        try {
-          this.state.objectDetections = await objectDetector.detectObjects(this.videoElement);
-        } catch (error) {
-          console.warn('Object detection failed:', error);
-          this.state.objectDetections = [];
-        }
       }
 
       // Notify state update
@@ -288,8 +301,16 @@ class ProcessingOrchestrator {
    */
   private async processMultiStudentFrame(faceDetection: FaceDetectionResult): Promise<void> {
     try {
-      // Update multi-student tracker
-      const classroomState = await multiStudentTracker.processFrame(faceDetection.faces);
+      // Ensure multiStudentTracker has video element reference for backend emotion service
+      if (this.videoElement) {
+        multiStudentTracker.setVideoElement(this.videoElement);
+      }
+      
+      // Update multi-student tracker with faces AND object detections
+      const classroomState = await multiStudentTracker.processFrame(
+        faceDetection.faces,
+        this.state.objectDetections // Pass object detections for phone/writing detection
+      );
       this.state.classroomState = classroomState;
 
       // Perform temporal behavior analysis

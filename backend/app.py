@@ -25,6 +25,7 @@ from routes.auth_routes import auth_bp
 # session_routes removed - reserved for new StudyEye implementation
 from routes.analytics_routes import analytics_bp
 from routes.user_routes import user_bp
+from routes.emotion_routes import emotion_bp
 
 # Import models
 from models.database import db
@@ -74,6 +75,7 @@ def create_app(config_name='development'):
     # session_bp removed - reserved for new StudyEye implementation
     app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
     app.register_blueprint(user_bp, url_prefix='/api/users')
+    app.register_blueprint(emotion_bp, url_prefix='/api/emotion')
     
     # WebSocket service removed - reserved for new StudyEye implementation
     

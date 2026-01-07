@@ -10,7 +10,7 @@
  * CRITICAL: No global state shortcuts - all signals computed per-student
  */
 
-import type { DetectedFace, Point, BoundingBox } from '../types';
+import type { DetectedFace, Point, BoundingBox, ObjectDetectionResult } from '../types';
 import type { 
   StudentState, 
   ClassroomState, 
@@ -27,6 +27,7 @@ import type {
 import { headPoseEstimator } from './headPoseEstimator';
 import { emotionRecognizer } from './emotionRecognizer';
 import { gazeEstimator } from './gazeEstimator';
+import { backendEmotionService } from './backendEmotionService';
 
 export interface TrackerConfig {
   // Association thresholds
@@ -48,6 +49,10 @@ export interface TrackerConfig {
   // Signal smoothing
   signalSmoothingAlpha: number;
   engagementSmoothingAlpha: number;
+  
+  // Backend emotion service
+  useBackendEmotion: boolean;
+  backendEmotionInterval: number; // ms between backend calls (to avoid overloading)
 }
 
 interface TemporalBuffer<T> {
@@ -88,6 +93,9 @@ export class MultiStudentTracker {
   private frameNumber: number = 0;
   private lastHistoryUpdateTime: number = 0;
   private nextStudentId: number = 1;
+  private currentObjectDetections: ObjectDetectionResult[] = []; // Store object detections for per-student processing
+  private videoElement: HTMLVideoElement | null = null; // Reference to video for backend emotion
+  private lastBackendEmotionTime: number = 0; // Rate limiting for backend calls
 
   constructor(config?: Partial<TrackerConfig>) {
     this.config = {
@@ -101,20 +109,42 @@ export class MultiStudentTracker {
       historyDurationSeconds: config?.historyDurationSeconds ?? 60,
       historyUpdateIntervalMs: config?.historyUpdateIntervalMs ?? 100,
       temporalWindowSize: config?.temporalWindowSize ?? 30,
-      signalSmoothingAlpha: config?.signalSmoothingAlpha ?? 0.3,
-      engagementSmoothingAlpha: config?.engagementSmoothingAlpha ?? 0.2,
+      signalSmoothingAlpha: config?.signalSmoothingAlpha ?? 0.4,  // Increased from 0.3 for faster response
+      engagementSmoothingAlpha: config?.engagementSmoothingAlpha ?? 0.35,  // Increased from 0.2 for faster response to distraction
+      useBackendEmotion: config?.useBackendEmotion ?? true, // Use backend CNN emotion by default
+      backendEmotionInterval: config?.backendEmotionInterval ?? 500, // Call backend every 500ms
     };
+    
+    // Check backend emotion service availability
+    if (this.config.useBackendEmotion) {
+      backendEmotionService.checkHealth().then(available => {
+        console.log(`[MultiStudentTracker] Backend emotion service: ${available ? 'available' : 'not available, using frontend fallback'}`);
+      });
+    }
+  }
+
+  /**
+   * Set video element reference for backend emotion service
+   */
+  setVideoElement(video: HTMLVideoElement): void {
+    this.videoElement = video;
   }
 
   /**
    * Main processing entry point - processes all detected faces
    * and maintains persistent student identities
+   * @param faces - Detected faces from face detector
+   * @param objectDetections - Object detections (phones, pens, etc.) for behavior analysis
    */
-  async processFrame(faces: DetectedFace[]): Promise<ClassroomState> {
+  async processFrame(
+    faces: DetectedFace[],
+    objectDetections: ObjectDetectionResult[] = []
+  ): Promise<ClassroomState> {
     this.frameNumber++;
     const currentTime = Date.now();
-
-    // Step 1: Prepare tracking candidates from detected faces
+    
+    // Store object detections for per-student processing
+    this.currentObjectDetections = objectDetections;    // Step 1: Prepare tracking candidates from detected faces
     const candidates = this.prepareCandidates(faces);
 
     // Step 2: Associate faces with existing students using IoU + centroid
@@ -359,7 +389,64 @@ export class MultiStudentTracker {
       }
 
       // 3. Emotion Recognition (per-student)
-      const emotionResult = emotionRecognizer.recognizeEmotion(face.landmarks, face.confidence);
+      // Try backend CNN emotion service first (more accurate), fallback to frontend landmarks
+      let emotionResult: StudentEmotion | null = null;
+      
+      // Check if we should use backend - be more aggressive about trying
+      const backendAvailable = backendEmotionService.isServiceAvailable();
+      const timeSinceLastBackend = currentTime - this.lastBackendEmotionTime;
+      const shouldUseBackend = this.config.useBackendEmotion && 
+                               this.videoElement && 
+                               (backendAvailable || timeSinceLastBackend > 5000) && // Retry every 5s if not available
+                               timeSinceLastBackend >= this.config.backendEmotionInterval;
+      
+      // Log backend status periodically
+      if (this.frameNumber % 100 === 0) {
+        console.log(`[Emotion] Backend status: available=${backendAvailable}, useBackend=${this.config.useBackendEmotion}, hasVideo=${!!this.videoElement}, timeSince=${timeSinceLastBackend}ms`);
+      }
+      
+      if (shouldUseBackend) {
+        try {
+          // If not available, try to check health again
+          if (!backendAvailable) {
+            console.log('[Emotion] Backend not available, checking health...');
+            await backendEmotionService.checkHealth();
+          }
+          
+          if (backendEmotionService.isServiceAvailable()) {
+            const backendResult = await backendEmotionService.classifyEmotion(
+              this.videoElement!,
+              student.boundingBox,
+              student.id.id
+            );
+            
+            if (backendResult) {
+              this.lastBackendEmotionTime = currentTime;
+              const mappedEmotion = backendEmotionService.mapToStudentEmotion(backendResult);
+              emotionResult = {
+                valence: mappedEmotion.valence,
+                arousal: mappedEmotion.arousal,
+                dominance: mappedEmotion.dominance,
+                emotions: mappedEmotion.emotions,
+                primaryEmotion: mappedEmotion.primaryEmotion as keyof StudentEmotion['emotions'],
+                confidence: mappedEmotion.confidence,
+              };
+              console.log(`[Emotion] ✅ Backend CNN: ${emotionResult.primaryEmotion} (${(emotionResult.confidence * 100).toFixed(1)}%)`);
+            }
+          }
+        } catch (error) {
+          console.warn('[Emotion] Backend service error, using frontend fallback:', error);
+        }
+      }
+      
+      // Fallback to frontend landmark-based emotion recognition
+      if (!emotionResult) {
+        if (this.frameNumber % 100 === 0) {
+          console.log('[Emotion] Using frontend landmark-based recognition (fallback)');
+        }
+        emotionResult = emotionRecognizer.recognizeEmotion(face.landmarks, face.confidence);
+      }
+      
       if (emotionResult) {
         student.emotion = this.smoothEmotion(student.emotion, emotionResult);
         
@@ -375,14 +462,27 @@ export class MultiStudentTracker {
       const blinkState = this.detectBlink(face.landmarks, buffers);
       this.addToBuffer(buffers.blinkHistory, blinkState, currentTime);
 
-      // 5. Behavior Classification (per-student, using temporal data)
-      student.behavior = this.classifyBehaviorWithTemporal(student, buffers, currentTime);
+      // 5. Phone Detection (per-student) - CHECK BEFORE BEHAVIOR CLASSIFICATION
+      const phoneDetection = this.checkPhoneForStudent(student);
+      
+      // 6. Behavior Classification (per-student, using temporal data)
+      // If phone detected, override behavior to technology_use
+      if (phoneDetection.detected) {
+        student.behavior = {
+          ...student.behavior,
+          primaryBehavior: 'technology_use',
+          visualConfidence: phoneDetection.confidence,
+          overallConfidence: phoneDetection.confidence,
+        };
+      } else {
+        student.behavior = this.classifyBehaviorWithTemporal(student, buffers, currentTime);
+      }
       this.addToBuffer(buffers.behaviorHistory, {
         behavior: student.behavior.primaryBehavior,
         confidence: student.behavior.overallConfidence,
       }, currentTime);
 
-      // 6. Engagement Calculation (per-student, using temporal data)
+      // 7. Engagement Calculation (per-student, using temporal data)
       student.engagement = this.calculateEngagementWithTemporal(student, buffers, currentTime);
       this.addToBuffer(buffers.engagementHistory, student.engagement.score, currentTime);
 
@@ -444,6 +544,10 @@ export class MultiStudentTracker {
 
   /**
    * Smooth emotion values
+   * 
+   * CRITICAL: Preserve primaryEmotion from backend CNN if confidence is high
+   * The backend maps FER2013 emotions (happy, sad, etc.) to engagement emotions (engaged, bored, etc.)
+   * We should NOT recalculate primaryEmotion from smoothed scores if backend provided a confident result
    */
   private smoothEmotion(current: StudentEmotion, newEmotion: StudentEmotion): StudentEmotion {
     const alpha = this.config.signalSmoothingAlpha;
@@ -453,14 +557,25 @@ export class MultiStudentTracker {
       smoothedEmotions[key] = alpha * newEmotion.emotions[key] + (1 - alpha) * (current.emotions[key] || 0);
     }
 
-    // Determine primary emotion from smoothed values
-    let maxScore = 0;
-    let primaryEmotion: keyof StudentEmotion['emotions'] = 'neutral';
-    for (const [emotion, score] of Object.entries(smoothedEmotions)) {
-      if (score > maxScore) {
-        maxScore = score;
-        primaryEmotion = emotion as keyof StudentEmotion['emotions'];
+    // CRITICAL FIX: Preserve primaryEmotion from new emotion if confidence is good
+    // This ensures backend CNN mapping (happy -> engaged) is not overwritten
+    let primaryEmotion: keyof StudentEmotion['emotions'] = newEmotion.primaryEmotion;
+    
+    // Only recalculate from smoothed scores if new emotion has low confidence
+    // This allows backend's direct mapping to take precedence
+    if (newEmotion.confidence < 0.25) {
+      let maxScore = 0;
+      for (const [emotion, score] of Object.entries(smoothedEmotions)) {
+        if (score > maxScore) {
+          maxScore = score;
+          primaryEmotion = emotion as keyof StudentEmotion['emotions'];
+        }
       }
+    }
+    
+    // Log emotion smoothing for debugging
+    if (newEmotion.primaryEmotion !== current.primaryEmotion) {
+      console.log(`[EmotionSmooth] ${current.primaryEmotion} -> ${newEmotion.primaryEmotion} (conf: ${(newEmotion.confidence * 100).toFixed(1)}%) -> final: ${primaryEmotion}`);
     }
 
     return {
@@ -475,31 +590,67 @@ export class MultiStudentTracker {
 
   /**
    * Classify attention target based on gaze and head pose
+   * 
+   * CRITICAL RULES:
+   * - Looking down + sideways = OFF_TASK (likely phone)
+   * - Looking far down (>30°) = OFF_TASK (likely phone in lap)
+   * - Looking moderately down (15-30°) + centered = NOTES (legitimate note-taking)
+   * - Looking up = BOARD
+   * - Looking sideways = PEER
    */
   private classifyAttentionTarget(
     gazeResult: { isLookingAtScreen: boolean; gazeDirection: string },
     pose: Student3DPose
   ): StudentAttention['target'] {
-    if (!gazeResult.isLookingAtScreen) {
+    const { pitch, yaw } = pose;
+    
+    // Debug log for significant head movements
+    if (Math.abs(pitch) > 12 || Math.abs(yaw) > 15) {
+      console.log(`[Attention] Head pose: pitch=${pitch.toFixed(1)}°, yaw=${yaw.toFixed(1)}°`);
+    }
+    
+    // RULE 1: Looking FAR down (>30°) = OFF_TASK (phone in lap)
+    // This is too far down to be reading notes on a desk
+    if (pitch > 30) {
+      console.log(`[Attention] Far down gaze (${pitch.toFixed(1)}°) → off_task`);
       return 'off_task';
     }
-
-    // Use head pose to refine attention target
-    const { pitch, yaw } = pose;
-
-    // Looking down significantly -> notes
-    if (pitch > 20) {
-      return 'notes';
+    
+    // RULE 2: Looking down + sideways = OFF_TASK (phone held to side)
+    // Note-taking doesn't involve looking sideways
+    if (pitch > 12 && Math.abs(yaw) > 18) {
+      console.log(`[Attention] Down+sideways (pitch=${pitch.toFixed(1)}°, yaw=${yaw.toFixed(1)}°) → off_task`);
+      return 'off_task';
+    }
+    
+    // RULE 3: Looking significantly sideways = PEER
+    if (Math.abs(yaw) > 30) {
+      return 'peer';
     }
 
-    // Looking up -> board
+    // RULE 4: Looking up = BOARD
     if (pitch < -15) {
       return 'board';
     }
-
-    // Looking significantly left or right -> peer
-    if (Math.abs(yaw) > 30) {
-      return 'peer';
+    
+    // RULE 5: Moderate down (15-30°) + centered = NOTES (legitimate note-taking)
+    // Only classify as notes if NOT looking sideways
+    if (pitch > 15 && pitch <= 30 && Math.abs(yaw) < 18) {
+      return 'notes';
+    }
+    
+    // RULE 6: Check if looking at screen
+    if (!gazeResult.isLookingAtScreen) {
+      // Moderate head turn but not extreme -> could be looking at peer or off_task
+      if (Math.abs(yaw) > 20) {
+        return 'peer';
+      }
+      // Looking down but not at notes = off_task
+      if (pitch > 12) {
+        console.log(`[Attention] Down gaze not at screen (${pitch.toFixed(1)}°) → off_task`);
+        return 'off_task';
+      }
+      return 'off_task';
     }
 
     // Center gaze with slight variations
@@ -509,7 +660,8 @@ export class MultiStudentTracker {
       case 'up':
         return 'board';
       case 'down':
-        return 'notes';
+        // Only notes if pitch is in valid range and centered
+        return (pitch > 15 && Math.abs(yaw) < 18) ? 'notes' : 'screen';
       case 'left':
       case 'right':
         return Math.abs(yaw) > 20 ? 'peer' : 'screen';
@@ -567,6 +719,11 @@ export class MultiStudentTracker {
   /**
    * Classify behavior using temporal data - MULTIMODAL + TEMPORAL INFERENCE
    * This implements the explicit Behavior Inference Layer
+   * 
+   * CRITICAL: Distraction detection takes priority over note-taking
+   * - Looking down + sideways = DISTRACTED (phone)
+   * - Looking far down = DISTRACTED (phone in lap)
+   * - off_task attention = DISTRACTED
    */
   private classifyBehaviorWithTemporal(
     student: StudentState,
@@ -589,18 +746,53 @@ export class MultiStudentTracker {
     const isPositivelyEngaged = student.emotion.primaryEmotion === 'engaged' && 
                                  student.emotion.confidence > 0.3;
     const isFocused = student.emotion.primaryEmotion === 'focused';
-    const isLookingAtContent = ['teacher', 'board', 'screen', 'notes'].includes(student.attention.target);
+    const attentionTarget = student.attention.target; // Store to avoid type narrowing issues
+    const isLookingAtContent = ['teacher', 'board', 'screen', 'notes'].includes(attentionTarget);
+    
+    // Get head pose for distraction checks
+    const { pitch, yaw } = student.pose;
 
+    // ============================================
+    // DISTRACTION RULES (CHECK FIRST - HIGHEST PRIORITY)
+    // ============================================
+    
+    // RULE: Off-task attention = DISTRACTED
+    if (attentionTarget === 'off_task') {
+      primaryBehavior = 'distracted';
+      visualConfidence = Math.max(0.7, student.attention.confidence);
+      console.log(`[Behavior] Off-task attention → distracted`);
+    }
+    // RULE: Looking DOWN + SIDEWAYS = DISTRACTED (likely phone held to side)
+    else if (pitch > 12 && Math.abs(yaw) > 15) {
+      primaryBehavior = 'distracted';
+      visualConfidence = Math.min(0.85, 0.6 + pitch / 50 + Math.abs(yaw) / 60);
+      console.log(`[Behavior] Down+sideways (pitch=${pitch.toFixed(1)}°, yaw=${yaw.toFixed(1)}°) → distracted`);
+    }
+    // RULE: Looking FAR DOWN = DISTRACTED (phone in lap)
+    else if (pitch > 28) {
+      primaryBehavior = 'distracted';
+      visualConfidence = Math.min(0.8, 0.5 + (pitch - 28) / 40);
+      console.log(`[Behavior] Far down gaze (pitch=${pitch.toFixed(1)}°) → distracted`);
+    }
+    // RULE: Disengaged emotions
+    else if (
+      (student.emotion.primaryEmotion === 'bored' || student.emotion.primaryEmotion === 'drowsy') &&
+      student.emotion.arousal < 0.3
+    ) {
+      primaryBehavior = 'disengaged';
+      visualConfidence = student.emotion.confidence;
+    }
+    // ============================================
+    // ENGAGEMENT RULES (CHECK AFTER DISTRACTION)
+    // ============================================
     // RULE: Active Listening (PRIORITY for engaged/happy students)
-    // Engaged emotion (smiling) + looking at content = active listening
-    if (isPositivelyEngaged && isLookingAtContent) {
+    else if (isPositivelyEngaged && isLookingAtContent) {
       primaryBehavior = 'active_listening';
       visualConfidence = Math.max(student.emotion.confidence, 0.7);
     }
     // RULE: Active Listening (focused variant)
-    // gaze → teacher/board, emotion → focused, stable head pose
     else if (
-      (student.attention.target === 'teacher' || student.attention.target === 'board') &&
+      (attentionTarget === 'teacher' || attentionTarget === 'board') &&
       isFocused &&
       gazeStability > 0.5 &&
       headPoseStability > 0.4
@@ -609,9 +801,8 @@ export class MultiStudentTracker {
       visualConfidence = Math.min(student.attention.confidence, student.emotion.confidence, gazeStability);
     }
     // RULE: Passive Listening
-    // gaze → teacher/board/screen, emotion → neutral, stable
     else if (
-      ['teacher', 'board', 'screen'].includes(student.attention.target) &&
+      ['teacher', 'board', 'screen'].includes(attentionTarget) &&
       student.emotion.primaryEmotion === 'neutral' &&
       gazeStability > 0.3
     ) {
@@ -619,62 +810,49 @@ export class MultiStudentTracker {
       visualConfidence = Math.min(student.attention.confidence, gazeStability);
     }
     // RULE: Cognitive Load
-    // gaze → board/notes, emotion → confused, increased blink rate
     else if (
-      ['board', 'notes', 'screen'].includes(student.attention.target) &&
+      ['board', 'notes', 'screen'].includes(attentionTarget) &&
       student.emotion.primaryEmotion === 'confused' &&
       blinkRate > 0.3
     ) {
       primaryBehavior = 'cognitive_load';
       visualConfidence = student.emotion.confidence;
     }
-    // RULE: Note Taking
-    // gaze → notes (looking down), stable attention
+    // RULE: Note Taking (STRICT CRITERIA)
+    // Must be looking down (15-30°) AND centered (no sideways tilt)
     else if (
-      student.attention.target === 'notes' &&
-      student.pose.pitch > 15 &&
-      gazeStability > 0.5
+      attentionTarget === 'notes' &&
+      pitch > 15 &&
+      pitch < 30 &&
+      Math.abs(yaw) < 15 &&  // Strict: no sideways tilt
+      gazeStability > 0.4
     ) {
       primaryBehavior = 'note_taking';
       visualConfidence = student.attention.confidence;
     }
     // RULE: Peer Discussion
-    // gaze → peer, alternating head pose, positive emotion
     else if (
-      student.attention.target === 'peer' &&
+      attentionTarget === 'peer' &&
       (student.emotion.primaryEmotion === 'engaged' || student.emotion.valence > 0.2) &&
       headPoseStability < 0.6
     ) {
       primaryBehavior = 'peer_discussion';
       visualConfidence = Math.min(student.attention.confidence, student.emotion.confidence);
     }
-    // RULE: Off-Task Talking
-    // gaze → peer/off_task, frequent head turns, neutral/negative emotion
+    // RULE: Off-Task Talking (peer direction with negative emotion)
     else if (
-      (student.attention.target === 'peer' || student.attention.target === 'off_task') &&
+      attentionTarget === 'peer' &&
       headPoseStability < 0.4 &&
       student.emotion.valence < 0.3
     ) {
       primaryBehavior = 'off_task_talking';
       visualConfidence = Math.min(student.attention.confidence, 1 - headPoseStability);
     }
-    // RULE: Distracted
-    // gaze → off_task, low stability
-    else if (
-      student.attention.target === 'off_task' &&
-      gazeStability < 0.4
-    ) {
+    // RULE: Moderate down gaze without note context = distracted
+    else if (pitch > 18 && attentionTarget !== 'notes') {
       primaryBehavior = 'distracted';
-      visualConfidence = student.attention.confidence;
-    }
-    // RULE: Disengaged
-    // emotion → bored/drowsy, low arousal
-    else if (
-      (student.emotion.primaryEmotion === 'bored' || student.emotion.primaryEmotion === 'drowsy') &&
-      student.emotion.arousal < 0.3
-    ) {
-      primaryBehavior = 'disengaged';
-      visualConfidence = student.emotion.confidence;
+      visualConfidence = 0.6;
+      console.log(`[Behavior] Moderate down (pitch=${pitch.toFixed(1)}°) without notes → distracted`);
     }
 
     // Calculate temporal confidence based on behavior persistence
@@ -699,6 +877,222 @@ export class MultiStudentTracker {
       behaviorDuration: duration,
       transitionProbability: 1 - stability,
     };
+  }
+
+  /**
+   * Check if a phone is detected near/overlapping with a student
+   * Used for per-student phone detection in multi-student mode
+   * 
+   * APPROACH: Multi-signal phone use detection
+   * 1. COCO-SSD object detection (if available)
+   * 2. Gaze + Head Pose inference (looking down/away at hands)
+   * 3. Behavioral pattern detection (sustained downward gaze)
+   */
+  private checkPhoneForStudent(student: StudentState): { detected: boolean; confidence: number } {
+    // METHOD 1: COCO-SSD object detection (if available)
+    const cocoDetection = this.checkPhoneViaCOCOSSD(student);
+    if (cocoDetection.detected) {
+      console.log(`[Phone Check] COCO-SSD detected phone for student ${student.id.id}`);
+      return cocoDetection;
+    }
+    
+    // METHOD 2: Gaze + Head Pose inference
+    // When using a phone, users typically:
+    // - Look DOWN (positive pitch) at their hands
+    // - May look slightly to the side (yaw)
+    // - Eyes may not be looking at screen
+    // - Gaze direction is "down" or off-center
+    const poseInference = this.inferPhoneUseFromPose(student);
+    if (poseInference.detected) {
+      console.log(`[Phone Check] Pose inference detected phone use for student ${student.id.id}: pitch=${student.pose.pitch.toFixed(1)}°, yaw=${student.pose.yaw.toFixed(1)}°`);
+      return poseInference;
+    }
+    
+    return { detected: false, confidence: 0 };
+  }
+  
+  /**
+   * Check for phone using COCO-SSD detections
+   */
+  private checkPhoneViaCOCOSSD(student: StudentState): { detected: boolean; confidence: number } {
+    // Check for both "cell phone" and "remote" (COCO-SSD sometimes misclassifies)
+    const phones = this.currentObjectDetections.filter(
+      obj => (obj.objectType === 'cell phone' || obj.objectType === 'remote') && obj.confidence >= 0.15
+    );
+    
+    if (phones.length === 0) {
+      return { detected: false, confidence: 0 };
+    }
+
+    // Debug: Log phone detection attempt
+    console.log(`[Phone Check] COCO-SSD found ${phones.length} phone/remote(s):`, 
+      phones.map(p => `${p.objectType} (${(p.confidence * 100).toFixed(1)}%)`));
+    
+    // SINGLE STUDENT MODE: If only 1 student tracked, ANY phone = their phone
+    const activeStudents = Array.from(this.students.values()).filter(s => s.isActive).length;
+    
+    if (activeStudents <= 1) {
+      const bestPhone = phones.reduce((best, p) => p.confidence > best.confidence ? p : best, phones[0]);
+      return { detected: true, confidence: bestPhone.confidence };
+    }
+
+    // MULTI-STUDENT MODE: Check proximity
+    for (const phone of phones) {
+      const overlap = this.calculateBoundingBoxOverlap(student.boundingBox, phone.boundingBox);
+      if (overlap > 0.02) {
+        return { detected: true, confidence: phone.confidence };
+      }
+      if (this.isPhoneNearStudent(student, phone)) {
+        return { detected: true, confidence: phone.confidence * 0.9 };
+      }
+    }
+    
+    return { detected: false, confidence: 0 };
+  }
+  
+  /**
+   * Infer phone use from head pose and gaze patterns
+   * 
+   * Phone use indicators:
+   * 1. Looking DOWN significantly (pitch > 20°) - looking at phone in hands
+   * 2. Looking DOWN + to the SIDE (pitch > 15° AND |yaw| > 15°) - phone held to side
+   * 3. Gaze NOT at screen + looking down
+   * 4. Sustained pattern (not just a quick glance)
+   */
+  private inferPhoneUseFromPose(student: StudentState): { detected: boolean; confidence: number } {
+    const { pitch, yaw } = student.pose;
+    const attentionTarget = student.attention.target;
+    const gazeStability = student.attention.gazeStability;
+    
+    // Get temporal buffers for this student to check sustained patterns
+    const buffers = this.temporalBuffers.get(student.id.id);
+    
+    // PATTERN 1: Strong downward gaze (looking at phone in lap/hands)
+    // Pitch > 25° is very significant head tilt down
+    if (pitch > 25) {
+      // Check if this is sustained (not just a quick glance)
+      const isSustained = this.isDownwardGazeSustained(buffers, 3); // 3+ frames
+      if (isSustained) {
+        console.log(`[Phone Inference] Strong downward gaze detected: pitch=${pitch.toFixed(1)}°`);
+        return { 
+          detected: true, 
+          confidence: Math.min(0.85, 0.6 + (pitch - 25) / 50) 
+        };
+      }
+    }
+    
+    // PATTERN 2: Moderate downward + sideways gaze (phone held to side)
+    // This catches the common pose of holding phone to the side of face
+    if (pitch > 15 && Math.abs(yaw) > 20) {
+      const isSustained = this.isDownwardGazeSustained(buffers, 2);
+      if (isSustained) {
+        console.log(`[Phone Inference] Down+side gaze detected: pitch=${pitch.toFixed(1)}°, yaw=${yaw.toFixed(1)}°`);
+        return { 
+          detected: true, 
+          confidence: Math.min(0.75, 0.5 + (pitch - 15) / 40 + Math.abs(yaw) / 60) 
+        };
+      }
+    }
+    
+    // PATTERN 3: Off-task attention + looking down
+    // If attention is off_task AND head is tilted down, likely phone use
+    if (attentionTarget === 'off_task' && pitch > 10) {
+      const isSustained = this.isDownwardGazeSustained(buffers, 3);
+      if (isSustained && gazeStability > 0.3) {
+        console.log(`[Phone Inference] Off-task + downward gaze: pitch=${pitch.toFixed(1)}°, target=${attentionTarget}`);
+        return { 
+          detected: true, 
+          confidence: Math.min(0.7, 0.4 + (pitch - 10) / 30) 
+        };
+      }
+    }
+    
+    // PATTERN 4: Looking at "peer" position but with downward tilt
+    // This catches phone use disguised as looking at neighbor
+    if (attentionTarget === 'peer' && pitch > 12 && Math.abs(yaw) > 25) {
+      const isSustained = this.isDownwardGazeSustained(buffers, 2);
+      if (isSustained) {
+        console.log(`[Phone Inference] Peer-direction + downward: pitch=${pitch.toFixed(1)}°, yaw=${yaw.toFixed(1)}°`);
+        return { 
+          detected: true, 
+          confidence: 0.6 
+        };
+      }
+    }
+    
+    return { detected: false, confidence: 0 };
+  }
+  
+  /**
+   * Check if downward gaze has been sustained for N frames
+   */
+  private isDownwardGazeSustained(
+    buffers: StudentTemporalBuffers | undefined, 
+    minFrames: number
+  ): boolean {
+    if (!buffers || buffers.headPoseHistory.data.length < minFrames) {
+      // Not enough history, assume sustained if we're detecting it now
+      return true;
+    }
+    
+    const recentPoses = buffers.headPoseHistory.data.slice(-minFrames);
+    const downwardCount = recentPoses.filter(pose => pose.pitch > 10).length;
+    
+    // At least 60% of recent frames should show downward gaze
+    return downwardCount >= minFrames * 0.6;
+  }
+
+  /**
+   * Calculate overlap ratio between two bounding boxes
+   */
+  private calculateBoundingBoxOverlap(
+    box1: BoundingBox,
+    box2: { x: number; y: number; width: number; height: number }
+  ): number {
+    const x1 = Math.max(box1.x, box2.x);
+    const y1 = Math.max(box1.y, box2.y);
+    const x2 = Math.min(box1.x + box1.width, box2.x + box2.width);
+    const y2 = Math.min(box1.y + box1.height, box2.y + box2.height);
+
+    if (x2 <= x1 || y2 <= y1) return 0;
+
+    const intersection = (x2 - x1) * (y2 - y1);
+    const area1 = box1.width * box1.height;
+    
+    // Return overlap as ratio of student face area
+    return area1 > 0 ? intersection / area1 : 0;
+  }
+
+  /**
+   * Check if phone is near student (within 3x face width - increased for better detection)
+   */
+  private isPhoneNearStudent(
+    student: StudentState,
+    phone: { boundingBox: { x: number; y: number; width: number; height: number } }
+  ): boolean {
+    const studentCenter = {
+      x: student.boundingBox.x + student.boundingBox.width / 2,
+      y: student.boundingBox.y + student.boundingBox.height / 2
+    };
+    const phoneCenter = {
+      x: phone.boundingBox.x + phone.boundingBox.width / 2,
+      y: phone.boundingBox.y + phone.boundingBox.height / 2
+    };
+    
+    const distance = Math.sqrt(
+      Math.pow(studentCenter.x - phoneCenter.x, 2) +
+      Math.pow(studentCenter.y - phoneCenter.y, 2)
+    );
+    
+    // Phone within 3x face width is considered "near" (increased from 2x)
+    const proximityThreshold = student.boundingBox.width * 3;
+    const isNear = distance < proximityThreshold;
+    
+    if (isNear) {
+      console.log(`[Phone Proximity] Distance: ${distance.toFixed(0)}px, Threshold: ${proximityThreshold.toFixed(0)}px - NEAR`);
+    }
+    
+    return isNear;
   }
 
   /**
@@ -797,6 +1191,8 @@ export class MultiStudentTracker {
   /**
    * Calculate engagement score using temporal data
    * Engagement = weighted combination of attention, emotion, behavior, temporal consistency
+   * 
+   * CRITICAL: Phone detection (technology_use) applies a HARD PENALTY to engagement
    */
   private calculateEngagementWithTemporal(
     student: StudentState,
@@ -811,11 +1207,46 @@ export class MultiStudentTracker {
 
     // Weighted combination
     const weights = { attention: 0.30, emotion: 0.25, behavior: 0.30, temporal: 0.15 };
-    const rawScore = 
+    let rawScore = 
       attentionScore * weights.attention +
       emotionScore * weights.emotion +
       behaviorScore * weights.behavior +
       temporalScore * weights.temporal;
+
+    // CRITICAL: Apply HARD PENALTY for phone/technology use
+    // This ensures engagement drops significantly when phone is detected
+    if (student.behavior.primaryBehavior === 'technology_use') {
+      rawScore = Math.min(rawScore, 25); // Cap at 25 when using phone
+      console.log(`[Engagement] Phone detected - applying hard penalty. Score capped at 25`);
+    }
+    
+    // Also apply penalty for distracted/disengaged behaviors
+    if (student.behavior.primaryBehavior === 'distracted') {
+      rawScore = Math.min(rawScore, 35);
+      console.log(`[Engagement] Distracted behavior - score capped at 35`);
+    }
+    if (student.behavior.primaryBehavior === 'disengaged') {
+      rawScore = Math.min(rawScore, 30);
+      console.log(`[Engagement] Disengaged behavior - score capped at 30`);
+    }
+    
+    // CRITICAL: Apply HARD PENALTY for off_task attention
+    // When student is clearly not looking at content, engagement should drop
+    if (student.attention.target === 'off_task') {
+      rawScore = Math.min(rawScore, 40); // Cap at 40 when off-task
+      console.log(`[Engagement] Off-task attention - applying penalty. Score capped at 40`);
+    }
+    
+    // CRITICAL: Apply HARD PENALTY for drowsy/bored emotions
+    // Yawning, sleepiness, and boredom should significantly reduce engagement
+    if (student.emotion.primaryEmotion === 'drowsy' && student.emotion.confidence > 0.3) {
+      rawScore = Math.min(rawScore, 30); // Cap at 30 when drowsy
+      console.log(`[Engagement] Drowsy emotion detected - score capped at 30`);
+    }
+    if (student.emotion.primaryEmotion === 'bored' && student.emotion.confidence > 0.3) {
+      rawScore = Math.min(rawScore, 35); // Cap at 35 when bored
+      console.log(`[Engagement] Bored emotion detected - score capped at 35`);
+    }
 
     // Apply temporal smoothing to engagement score
     const prevScore = student.engagement.score;
@@ -1386,6 +1817,7 @@ export class MultiStudentTracker {
     this.frameNumber = 0;
     this.lastHistoryUpdateTime = 0;
     this.nextStudentId = 1;
+    this.currentObjectDetections = [];
   }
 
   /**
