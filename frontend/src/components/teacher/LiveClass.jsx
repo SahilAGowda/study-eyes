@@ -207,7 +207,7 @@ const LiveClass = () => {
                               variant="contained"
                               size="small"
                               startIcon={<PlayIcon />}
-                              onClick={() => navigate('/teacher/live-session', { 
+                              onClick={() => navigate('/teacher/temporal-monitoring', { 
                                 state: { classInfo: classItem } 
                               })}
                               sx={{

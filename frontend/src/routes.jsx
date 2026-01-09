@@ -28,7 +28,7 @@ import Reports from './components/student/Reports'
 
 // StudyEye Components
 import { StudyEyeDashboard } from './studyeye/components'
-import { TemporalMonitoringDashboard } from './studyeye/components'
+import TemporalMonitoringDashboard from './studyeye/components/TemporalMonitoringDashboard'
 
 // Teacher Components
 import TeacherDashboard from './components/teacher/Dashboard'

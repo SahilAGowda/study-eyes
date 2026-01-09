@@ -17,6 +17,7 @@ import { getModeManager } from './modeManager';
 import { multiStudentTracker } from './multiStudentTracker';
 import { headPoseEstimator } from './headPoseEstimator';
 import { temporalBehaviorEngine } from './temporalBehaviorEngine';
+import { getSessionTracker } from './sessionTracker';
 import type {
   FaceDetectionResult,
   GazeData,
@@ -388,6 +389,14 @@ class ProcessingOrchestrator {
       level: student.engagement.level,
       trend: student.engagement.trend
     };
+
+    // Update session tracker with behavior and engagement data
+    const sessionTracker = getSessionTracker();
+    if (sessionTracker.isSessionActive()) {
+      const behavior = student.behavior?.primaryBehavior || 'focused_on_screen';
+      sessionTracker.updateBehavior(behavior, false);
+      sessionTracker.recordEngagement(student.engagement.score);
+    }
   }
 
   /**
@@ -398,6 +407,12 @@ class ProcessingOrchestrator {
     this.state.emotionResult = null;
     this.state.behaviorResult = null;
     this.state.engagementScore = null;
+
+    // Update session tracker with no_face_detected behavior
+    const sessionTracker = getSessionTracker();
+    if (sessionTracker.isSessionActive()) {
+      sessionTracker.updateBehavior('no_face_detected', false);
+    }
   }
 
   /**
@@ -444,6 +459,15 @@ class ProcessingOrchestrator {
               const engagementScorer = getEngagementScorer();
               engagementScorer.updateScore(this.state.behaviorResult);
               this.state.engagementScore = engagementScorer.getCurrentScore();
+
+              // Update session tracker with behavior and engagement data
+              const sessionTracker = getSessionTracker();
+              if (sessionTracker.isSessionActive()) {
+                sessionTracker.updateBehavior(this.state.behaviorResult.behaviorClass, false);
+                if (this.state.engagementScore) {
+                  sessionTracker.recordEngagement(this.state.engagementScore.score);
+                }
+              }
 
               if (this.state.engagementScore) {
                 const temporalAnalyzer = getTemporalAnalyzer();

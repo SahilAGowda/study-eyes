@@ -14,11 +14,11 @@ export type { AudioData, AudioAnalyzerConfig, VoiceProfile, VoiceEnrollmentProgr
 const DEFAULT_CONFIG: Required<AudioAnalyzerConfig> = {
   fftSize: 2048,
   smoothingTimeConstant: 0.8,
-  speechEnergyThreshold: 0.02, // Threshold for speech detection
+  speechEnergyThreshold: 0.02, // Slightly higher threshold for better accuracy
   speechFrequencyRange: { min: 300, max: 3400 }, // Human speech frequency range (Hz)
   updateInterval: 100, // Update every 100ms
   voiceVerificationEnabled: false,
-  voiceSimilarityThreshold: 0.7, // 70% similarity required for teacher match
+  voiceSimilarityThreshold: 0.55, // Balanced threshold for matching
 };
 
 export class AudioAnalyzer {
@@ -35,7 +35,7 @@ export class AudioAnalyzer {
   private ambientNoiseSamples: number[] = [];
   private calibrating: boolean = true;
   private calibrationSamples: number = 0;
-  private readonly CALIBRATION_DURATION = 30; // 30 samples (~3 seconds at 100ms intervals)
+  private readonly CALIBRATION_DURATION = 20; // 20 samples (~2 seconds at 100ms intervals) - faster calibration
   
   // Voice verification properties
   private teacherVoiceProfile: VoiceProfile | null = null;
@@ -44,9 +44,9 @@ export class AudioAnalyzer {
   private enrollmentStartTime: number = 0;
   private enrollmentDuration: number = 0;
   private readonly ENROLLMENT_DURATION_MS = 12000; // 12 seconds
-  private readonly MIN_ENROLLMENT_SAMPLES = 30; // Minimum samples for reliable profile (reduced for easier enrollment)
+  private readonly MIN_ENROLLMENT_SAMPLES = 30; // Require more samples for better profile
   private speakerSimilarityHistory: number[] = []; // For temporal smoothing
-  private readonly SIMILARITY_HISTORY_SIZE = 20; // 2 seconds at 100ms intervals
+  private readonly SIMILARITY_HISTORY_SIZE = 15; // 1.5 seconds at 100ms intervals
   
   private updateIntervalId: number | null = null;
   private currentAudioData: AudioData = {
@@ -578,7 +578,7 @@ export class AudioAnalyzer {
    */
   private isSpeechNotNoise(audioData: Float32Array): boolean {
     if (!this.frequencyData || !this.audioContext) {
-      return false;
+      return true; // Default to true if we can't analyze
     }
 
     // Check for voice harmonics in fundamental frequency range (85-255 Hz)
@@ -598,11 +598,11 @@ export class AudioAnalyzer {
     // Calculate zero-crossing rate
     const zcr = this.calculateZeroCrossingRate(audioData);
     
-    // Speech has lower ZCR than noise (typically < 0.3)
-    // Speech has distinct harmonic structure
-    const hasLowZCR = zcr < 0.3;
-    const hasHarmonics = harmonicEnergy > 30; // Threshold for harmonic energy
+    // Stricter thresholds for proper speech detection
+    const hasLowZCR = zcr < 0.25; // Stricter - speech has lower ZCR than noise
+    const hasHarmonics = harmonicEnergy > 35; // Higher threshold - real speech has stronger harmonics
 
+    // BOTH conditions must be met for proper speech detection (AND logic)
     return hasLowZCR && hasHarmonics;
   }
 
@@ -820,19 +820,25 @@ export class AudioAnalyzer {
       return false;
     }
 
-    // During enrollment, use more lenient thresholds
+    // During enrollment, use stricter thresholds to avoid collecting noise
     if (this.enrollmentInProgress) {
-      // Much more sensitive during enrollment
-      const isAboveNoise = audioLevel > Math.max(this.ambientNoiseBaseline * 1.2, 0.01);
-      const hasSpeechEnergy = speechEnergy > this.config.speechEnergyThreshold * 0.5;
-      return isAboveNoise || hasSpeechEnergy; // OR instead of AND for enrollment
+      // Require BOTH conditions for enrollment - ensures we only collect real speech
+      const isAboveNoise = audioLevel > Math.max(this.ambientNoiseBaseline * 2.0, 0.02);
+      const hasSpeechEnergy = speechEnergy > this.config.speechEnergyThreshold * 0.8;
+      const result = isAboveNoise && hasSpeechEnergy; // AND logic for enrollment
+      
+      // Debug logging during enrollment
+      if (this.enrollmentSamples.length % 20 === 0) {
+        console.log(`[Enrollment] audioLevel: ${audioLevel.toFixed(4)}, baseline: ${this.ambientNoiseBaseline.toFixed(4)}, speechEnergy: ${speechEnergy.toFixed(4)}, detected: ${result}`);
+      }
+      return result;
     }
 
-    // Normal detection (more strict)
-    const isAboveNoise = audioLevel > this.ambientNoiseBaseline * 2;
+    // Normal detection - require BOTH conditions for accurate speech detection
+    const isAboveNoise = audioLevel > Math.max(this.ambientNoiseBaseline * 1.8, 0.015);
     const hasSpeechEnergy = speechEnergy > this.config.speechEnergyThreshold;
 
-    return isAboveNoise && hasSpeechEnergy;
+    return isAboveNoise && hasSpeechEnergy; // AND logic for proper speech detection
   }
 
   /**

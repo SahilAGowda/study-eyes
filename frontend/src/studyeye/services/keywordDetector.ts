@@ -116,13 +116,13 @@ export class KeywordDetector {
    */
   public initialize(): boolean {
     if (!KeywordDetector.isSupported()) {
-      console.warn('Web Speech API not supported in this browser');
+      console.warn('[KeywordDetector] Web Speech API not supported in this browser');
       return false;
     }
 
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionClass) {
-      console.warn('SpeechRecognition not available');
+      console.warn('[KeywordDetector] SpeechRecognition not available');
       return false;
     }
     
@@ -137,7 +137,9 @@ export class KeywordDetector {
 
     this.setupEventHandlers();
     
-    console.log('KeywordDetector initialized with keywords:', this.config.keywords);
+    console.log('[KeywordDetector] ✅ Initialized successfully');
+    console.log('[KeywordDetector] Keywords:', this.config.keywords);
+    console.log('[KeywordDetector] Language:', this.config.language);
     return true;
   }
 
@@ -150,6 +152,9 @@ export class KeywordDetector {
     this.recognition.onresult = (event: SpeechRecognitionEvent) => {
       const lastResult = event.results[event.results.length - 1];
       const transcript = lastResult[0].transcript.toLowerCase().trim();
+      const isFinal = lastResult.isFinal;
+      
+      console.log(`[KeywordDetector] 🎙️ Speech: "${transcript}" (final: ${isFinal})`);
       
       // Emit speech recognized event
       this.emit('speech_recognized', {
@@ -158,14 +163,14 @@ export class KeywordDetector {
         timestamp: Date.now(),
       });
 
-      // Check for keywords
-      if (lastResult.isFinal) {
+      // Check for keywords only on final results
+      if (isFinal) {
         this.checkForKeywords(transcript);
       }
     };
 
     this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('Speech recognition error:', event.error);
+      console.error('[KeywordDetector] ❌ Error:', event.error, event.message);
       this.emit('error', {
         type: 'error',
         transcript: event.error,
@@ -173,16 +178,23 @@ export class KeywordDetector {
       });
 
       // Restart on recoverable errors
-      if (event.error === 'no-speech' || event.error === 'audio-capture') {
+      if (event.error === 'no-speech' || event.error === 'audio-capture' || event.error === 'aborted') {
+        console.log('[KeywordDetector] Attempting to restart after error...');
         this.restartRecognition();
       }
     };
 
     this.recognition.onend = () => {
+      console.log('[KeywordDetector] Recognition ended, isListening:', this.isListening);
       // Auto-restart if still supposed to be listening
       if (this.isListening) {
         this.restartRecognition();
       }
+    };
+    
+    // Add onstart handler for debugging
+    (this.recognition as any).onstart = () => {
+      console.log('[KeywordDetector] 🎤 Recognition started');
     };
   }
 
@@ -293,21 +305,22 @@ export class KeywordDetector {
    */
   public startListening(): boolean {
     if (!this.recognition) {
-      console.error('KeywordDetector not initialized');
+      console.error('[KeywordDetector] Not initialized - call initialize() first');
       return false;
     }
 
     if (this.isListening) {
+      console.log('[KeywordDetector] Already listening');
       return true;
     }
 
     try {
       this.recognition.start();
       this.isListening = true;
-      console.log('🎤 Keyword detection started');
+      console.log('🎤 [KeywordDetector] Started listening for keywords:', this.config.keywords);
       return true;
     } catch (error) {
-      console.error('Failed to start speech recognition:', error);
+      console.error('[KeywordDetector] Failed to start speech recognition:', error);
       return false;
     }
   }

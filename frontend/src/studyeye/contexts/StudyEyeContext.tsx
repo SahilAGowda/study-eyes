@@ -23,6 +23,7 @@ import type {
 import type { ProcessingState } from '../services/processingOrchestrator';
 import type { TimelineDataPoint } from '../types';
 import { processingOrchestrator, getTemporalAnalyzer } from '../services';
+import { getSessionTracker } from '../services/sessionTracker';
 
 export interface StudyEyeState {
   // Session state
@@ -162,6 +163,10 @@ export const StudyEyeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         // Start processing
         processingOrchestrator.startProcessing();
+        
+        // Start session tracking for reports
+        const sessionTracker = getSessionTracker();
+        sessionTracker.startSession();
 
         setState((prev) => ({
           ...prev,
@@ -185,6 +190,13 @@ export const StudyEyeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
 
   const stopSession = useCallback(() => {
+    // End session tracking and save report
+    const sessionTracker = getSessionTracker();
+    const report = sessionTracker.endSession();
+    if (report) {
+      console.log('📊 Session report saved:', report.summary);
+    }
+    
     processingOrchestrator.stopProcessing();
     processingOrchestrator.reset();
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { 
   Users, TrendingUp, Bell, ClipboardList, Play, Eye, Calendar,
@@ -8,6 +9,7 @@ import {
 } from 'lucide-react';
 
 const TeacherDashboard = () => {
+  const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [liveEngagement, setLiveEngagement] = useState(68);
 
@@ -237,6 +239,7 @@ const TeacherDashboard = () => {
               </p>
               <div className="flex items-center gap-4 flex-wrap">
                 <button
+                  onClick={() => navigate('/teacher/temporal-monitoring')}
                   style={{
                     background: 'white',
                     color: '#4CAF50',
@@ -433,15 +436,16 @@ const TeacherDashboard = () => {
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {[
-                { icon: Play, label: "Start Live Class", primary: true },
-                { icon: Plus, label: "Create Quiz" },
-                { icon: Users, label: "View Students" },
-                { icon: BarChart3, label: "Generate Report" },
+                { icon: Play, label: "Start Live Class", primary: true, route: '/teacher/temporal-monitoring' },
+                { icon: Plus, label: "Create Quiz", route: '/teacher/quizzes-exams' },
+                { icon: Users, label: "View Students", route: '/teacher/students-overview' },
+                { icon: BarChart3, label: "Generate Report", route: '/teacher/reports-analytics' },
                 { icon: Send, label: "Send Announcement" },
                 { icon: BookOpen, label: "Upload Materials" }
               ].map((action, idx) => (
                 <button
                   key={idx}
+                  onClick={() => action.route && navigate(action.route)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

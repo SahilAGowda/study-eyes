@@ -1,3 +1,5 @@
+import { saveSessionReport } from './sessionStorage';
+
 /**
  * SessionTracker Service
  * 
@@ -66,7 +68,6 @@ export class SessionTracker {
   private currentBehavior: string = 'no_face_detected';
   private isFocused: boolean = false;
   private isNoteTaking: boolean = false;
-  private focusStartTime: number = 0;
   
   // Accumulated metrics
   private totalFocusedTime: number = 0;
@@ -87,19 +88,24 @@ export class SessionTracker {
   // Engagement tracking
   private engagementSamples: number[] = [];
   private readonly MAX_ENGAGEMENT_SAMPLES = 1000;
+  
+  // Debug flag
+  private debugMode: boolean = true;
 
   /**
    * Start tracking a new session
    */
   public startSession(): void {
     if (this.isTracking) {
+      console.log('📊 [SessionTracker] Session already active, ending previous session first');
       this.endSession();
     }
 
+    const now = Date.now();
     this.isTracking = true;
-    this.sessionStartTime = Date.now();
-    this.lastUpdateTime = this.sessionStartTime;
-    this.behaviorStartTime = this.sessionStartTime;
+    this.sessionStartTime = now;
+    this.lastUpdateTime = now;
+    this.behaviorStartTime = now;
     
     // Reset all metrics
     this.totalFocusedTime = 0;
@@ -113,42 +119,71 @@ export class SessionTracker {
     this.events = [];
     this.engagementSamples = [];
     this.currentBehavior = 'no_face_detected';
+    // Start as NOT focused (no face detected initially)
     this.isFocused = false;
     this.isNoteTaking = false;
 
     this.addEvent({
-      timestamp: this.sessionStartTime,
+      timestamp: now,
       type: 'session_start',
       details: 'Session started',
     });
 
-    console.log('📊 Session tracking started');
+    console.log(`📊 [SessionTracker] Session started at ${new Date(now).toLocaleTimeString()}, sessionStartTime=${now}`);
   }
 
   /**
    * End the current session
    */
   public endSession(): SessionReport | null {
-    if (!this.isTracking) return null;
+    if (!this.isTracking) {
+      console.log('📊 [SessionTracker] No active session to end');
+      return null;
+    }
 
+    const now = Date.now();
+    const sessionDuration = now - this.sessionStartTime;
+    
+    console.log(`📊 [SessionTracker] Ending session. Duration: ${sessionDuration}ms, startTime: ${this.sessionStartTime}, now: ${now}`);
+    
     // Finalize current behavior time
     this.finalizeBehaviorTime();
     
-    // Finalize focus time if currently focused
-    if (this.isFocused) {
-      this.totalFocusedTime += Date.now() - this.focusStartTime;
+    // Add final time delta since last update
+    const finalTimeDelta = now - this.lastUpdateTime;
+    if (finalTimeDelta > 0) {
+      if (this.isFocused) {
+        this.totalFocusedTime += finalTimeDelta;
+      } else {
+        this.totalDistractedTime += finalTimeDelta;
+      }
+      console.log(`📊 [SessionTracker] Final delta: ${finalTimeDelta}ms (focused: ${this.isFocused})`);
     }
 
+    // Add session end event BEFORE setting isTracking to false
     this.addEvent({
-      timestamp: Date.now(),
+      timestamp: now,
       type: 'session_end',
       details: 'Session ended',
     });
+    
+    console.log(`📊 [SessionTracker] Before report - totalFocusedTime: ${this.totalFocusedTime}ms, totalDistractedTime: ${this.totalDistractedTime}ms`);
 
+    // Generate report BEFORE setting isTracking to false so getMetrics works correctly
+    const report = this.generateReport();
+    
+    // Now set isTracking to false
     this.isTracking = false;
     
-    const report = this.generateReport();
-    console.log('📊 Session tracking ended', report.summary);
+    console.log(`📊 [SessionTracker] Final metrics - Duration: ${report.metrics.sessionDuration}ms, Focus: ${report.metrics.focusPercentage}%, FocusTime: ${report.metrics.totalFocusedTime}ms, DistractedTime: ${report.metrics.totalDistractedTime}ms`);
+    
+    // Save report to localStorage for Reports page
+    try {
+      saveSessionReport(report);
+      console.log('📊 [SessionTracker] Report saved to storage');
+    } catch (error) {
+      console.error('[SessionTracker] Failed to save session report:', error);
+    }
     
     return report;
   }
@@ -163,6 +198,28 @@ export class SessionTracker {
     const timeDelta = now - this.lastUpdateTime;
     this.lastUpdateTime = now;
 
+    // Determine if this behavior counts as focused
+    const focusedBehaviors = [
+      'focused_on_screen', 
+      'active_listening', 
+      'passive_listening',
+      'cognitive_load',
+      'note_taking'
+    ];
+    const isBehaviorFocused = focusedBehaviors.includes(behavior) || isNoteTakingMode;
+
+    // Accumulate time based on PREVIOUS state (before this update)
+    if (this.isFocused) {
+      this.totalFocusedTime += timeDelta;
+    } else {
+      this.totalDistractedTime += timeDelta;
+    }
+
+    // Debug logging
+    if (this.debugMode && timeDelta > 0) {
+      console.log(`[SessionTracker] behavior=${behavior}, focused=${isBehaviorFocused}, delta=${timeDelta}ms, totalFocus=${this.totalFocusedTime}ms, totalDistracted=${this.totalDistractedTime}ms`);
+    }
+
     // Handle behavior change
     if (behavior !== this.currentBehavior) {
       this.finalizeBehaviorTime();
@@ -174,14 +231,11 @@ export class SessionTracker {
         details: `Changed from ${this.currentBehavior} to ${behavior}`,
       });
 
-      // Track distraction
+      // Track distraction transition
       const wasFocused = this.isFocused;
-      this.isFocused = behavior === 'focused_on_screen' || 
-                       (isNoteTakingMode && behavior === 'note_taking');
 
-      if (wasFocused && !this.isFocused && !isNoteTakingMode) {
+      if (wasFocused && !isBehaviorFocused) {
         this.distractionCount++;
-        this.totalFocusedTime += now - this.focusStartTime;
         
         this.addEvent({
           timestamp: now,
@@ -189,9 +243,7 @@ export class SessionTracker {
           details: `Distraction: ${behavior}`,
           behavior: behavior,
         });
-      } else if (!wasFocused && this.isFocused) {
-        this.focusStartTime = now;
-        
+      } else if (!wasFocused && isBehaviorFocused) {
         this.addEvent({
           timestamp: now,
           type: 'focus_start',
@@ -202,6 +254,9 @@ export class SessionTracker {
       this.currentBehavior = behavior;
       this.behaviorStartTime = now;
     }
+
+    // Update focused state for next iteration
+    this.isFocused = isBehaviorFocused;
 
     // Handle note-taking mode
     if (isNoteTakingMode && !this.isNoteTaking) {
@@ -226,11 +281,6 @@ export class SessionTracker {
     // Track note-taking time
     if (isNoteTakingMode) {
       this.totalNoteTakingTime += timeDelta;
-    }
-
-    // Track distracted time
-    if (!this.isFocused && !isNoteTakingMode) {
-      this.totalDistractedTime += timeDelta;
     }
   }
 
@@ -316,17 +366,40 @@ export class SessionTracker {
    */
   public getMetrics(): SessionMetrics {
     const now = Date.now();
-    const sessionDuration = this.isTracking ? now - this.sessionStartTime : 0;
     
-    // Calculate current focus time
+    // Calculate session duration
+    let sessionDuration = 0;
+    if (this.isTracking && this.sessionStartTime > 0) {
+      // Session is active
+      sessionDuration = now - this.sessionStartTime;
+    } else if (this.sessionStartTime > 0) {
+      // Session ended - calculate from events or accumulated time
+      const sessionEndEvent = this.events.find(e => e.type === 'session_end');
+      if (sessionEndEvent) {
+        sessionDuration = sessionEndEvent.timestamp - this.sessionStartTime;
+      } else {
+        // Fallback to accumulated time
+        sessionDuration = this.totalFocusedTime + this.totalDistractedTime;
+      }
+    }
+    
+    // Calculate current focus time (add time since last update if tracking)
     let currentFocusTime = this.totalFocusedTime;
-    if (this.isFocused && this.isTracking) {
-      currentFocusTime += now - this.focusStartTime;
+    let currentDistractedTime = this.totalDistractedTime;
+    
+    if (this.isTracking && this.lastUpdateTime > 0) {
+      const timeSinceLastUpdate = now - this.lastUpdateTime;
+      if (this.isFocused) {
+        currentFocusTime += timeSinceLastUpdate;
+      } else {
+        currentDistractedTime += timeSinceLastUpdate;
+      }
     }
 
-    // Calculate focus percentage
-    const focusPercentage = sessionDuration > 0 
-      ? Math.round((currentFocusTime / sessionDuration) * 100) 
+    // Calculate focus percentage based on actual tracked time
+    const totalTrackedTime = currentFocusTime + currentDistractedTime;
+    const focusPercentage = totalTrackedTime > 0 
+      ? Math.round((currentFocusTime / totalTrackedTime) * 100) 
       : 0;
 
     // Calculate average engagement
@@ -334,21 +407,31 @@ export class SessionTracker {
       ? Math.round(this.engagementSamples.reduce((a, b) => a + b, 0) / this.engagementSamples.length)
       : 0;
 
-    // Build behavior breakdown
+    // Build behavior breakdown - include all behavior types
     const behaviorBreakdown = {
-      focused_on_screen: this.behaviorTimes.get('focused_on_screen') || 0,
-      looking_away: this.behaviorTimes.get('looking_away') || 0,
+      focused_on_screen: (this.behaviorTimes.get('focused_on_screen') || 0) + 
+                         (this.behaviorTimes.get('active_listening') || 0) +
+                         (this.behaviorTimes.get('passive_listening') || 0) +
+                         (this.behaviorTimes.get('cognitive_load') || 0),
+      looking_away: (this.behaviorTimes.get('looking_away') || 0) +
+                    (this.behaviorTimes.get('distracted') || 0) +
+                    (this.behaviorTimes.get('off_task_talking') || 0),
       note_taking: this.behaviorTimes.get('note_taking') || 0,
       no_face_detected: this.behaviorTimes.get('no_face_detected') || 0,
-      phone_detected: this.behaviorTimes.get('phone_detected') || 0,
-      speaking: this.behaviorTimes.get('speaking') || 0,
+      phone_detected: (this.behaviorTimes.get('phone_detected') || 0) +
+                      (this.behaviorTimes.get('technology_use') || 0),
+      speaking: (this.behaviorTimes.get('speaking') || 0) +
+                (this.behaviorTimes.get('peer_discussion') || 0),
     };
+    
+    // Use the larger of sessionDuration or totalTrackedTime
+    const finalDuration = Math.max(sessionDuration, totalTrackedTime);
 
     return {
       sessionStartTime: this.sessionStartTime,
-      sessionDuration,
+      sessionDuration: finalDuration,
       totalFocusedTime: currentFocusTime,
-      totalDistractedTime: this.totalDistractedTime,
+      totalDistractedTime: currentDistractedTime,
       totalNoteTakingTime: this.totalNoteTakingTime,
       distractionCount: this.distractionCount,
       noteTakingCount: this.noteTakingCount,
@@ -365,7 +448,31 @@ export class SessionTracker {
    * Generate session report
    */
   public generateReport(): SessionReport {
+    // Calculate duration from events if available
+    const sessionEndEvent = this.events.find(e => e.type === 'session_end');
+    const sessionStartEvent = this.events.find(e => e.type === 'session_start');
+    
+    let calculatedDuration = 0;
+    if (sessionEndEvent && sessionStartEvent) {
+      calculatedDuration = sessionEndEvent.timestamp - sessionStartEvent.timestamp;
+    } else if (this.sessionStartTime > 0) {
+      calculatedDuration = Date.now() - this.sessionStartTime;
+    }
+    
+    console.log(`📊 [SessionTracker] generateReport - sessionStartTime: ${this.sessionStartTime}, calculatedDuration: ${calculatedDuration}ms`);
+    console.log(`📊 [SessionTracker] generateReport - totalFocusedTime: ${this.totalFocusedTime}ms, totalDistractedTime: ${this.totalDistractedTime}ms`);
+    
     const metrics = this.getMetrics();
+    
+    // Override duration if calculated is better
+    if (calculatedDuration > 0 && metrics.sessionDuration === 0) {
+      metrics.sessionDuration = calculatedDuration;
+      // Recalculate focus percentage
+      const totalTime = this.totalFocusedTime + this.totalDistractedTime;
+      metrics.focusPercentage = totalTime > 0 
+        ? Math.round((this.totalFocusedTime / totalTime) * 100)
+        : 0;
+    }
     
     // Calculate focus score (weighted)
     const focusScore = Math.round(
@@ -441,7 +548,6 @@ export class SessionTracker {
     this.currentBehavior = 'no_face_detected';
     this.isFocused = false;
     this.isNoteTaking = false;
-    this.focusStartTime = 0;
     this.totalFocusedTime = 0;
     this.totalDistractedTime = 0;
     this.totalNoteTakingTime = 0;

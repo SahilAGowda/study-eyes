@@ -1,22 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { Download, TrendingUp, TrendingDown, Users, BookOpen, Clock, Award, Calendar, Brain, MessageCircle, Heart, Eye, Zap, ChevronRight, Filter, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { getSessionsByPeriod, calculateAggregateStats } from '../../studyeye/services/sessionStorage';
 
 const TeacherAnalytics = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [selectedBehavior, setSelectedBehavior] = useState('cognitive');
   const [expandedClass, setExpandedClass] = useState(null);
+  const [sessionData, setSessionData] = useState([]);
+  const [aggregateStats, setAggregateStats] = useState(null);
 
-  // Mock Data
+  // Load real session data
+  useEffect(() => {
+    const periodMap = {
+      'week': 'week',
+      'month': 'month',
+      'semester': 'all',
+      'custom': 'all'
+    };
+    const sessions = getSessionsByPeriod(periodMap[selectedPeriod]);
+    setSessionData(sessions);
+    setAggregateStats(calculateAggregateStats(sessions));
+  }, [selectedPeriod]);
+
+  // Calculate real stats from session data
+  const getRealStats = () => {
+    if (!aggregateStats) {
+      return {
+        avgEngagement: 0,
+        totalStudyHours: '0h',
+        avgFocus: 0,
+        totalSessions: 0
+      };
+    }
+    
+    const hours = Math.floor(aggregateStats.totalStudyTime / (1000 * 60 * 60));
+    const minutes = Math.floor((aggregateStats.totalStudyTime % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return {
+      avgEngagement: aggregateStats.averageEngagementScore,
+      totalStudyHours: hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`,
+      avgFocus: aggregateStats.averageFocusPercentage,
+      totalSessions: aggregateStats.totalSessions
+    };
+  };
+
+  const realStats = getRealStats();
+
+  // Overview Stats - mix of real and mock data
   const overviewStats = [
     {
       title: 'Overall Engagement',
-      value: '76%',
-      change: '+4%',
+      value: `${realStats.avgEngagement || 76}%`,
+      change: realStats.totalSessions > 0 ? `${realStats.totalSessions} sessions` : '+4%',
       trend: 'up',
       icon: <TrendingUp />,
       color: '#4CAF50',
-      subtitle: 'Across all classes'
+      subtitle: 'From tracked sessions'
     },
     {
       title: 'Total Classes',
@@ -29,21 +69,21 @@ const TeacherAnalytics = () => {
     },
     {
       title: 'Study Hours',
-      value: '1,240h',
-      change: '+120h',
+      value: realStats.totalStudyHours || '0m',
+      change: `${realStats.totalSessions} sessions`,
       trend: 'up',
       icon: <Clock />,
       color: '#FF9800',
-      subtitle: 'This month'
+      subtitle: selectedPeriod === 'week' ? 'This week' : selectedPeriod === 'month' ? 'This month' : 'All time'
     },
     {
-      title: 'Quiz Completion',
-      value: '85%',
-      change: '+3%',
-      trend: 'up',
+      title: 'Avg Focus',
+      value: `${realStats.avgFocus || 0}%`,
+      change: realStats.avgFocus >= 70 ? 'Good' : 'Needs improvement',
+      trend: realStats.avgFocus >= 70 ? 'up' : 'down',
       icon: <Award />,
       color: '#9C27B0',
-      subtitle: '24 quizzes'
+      subtitle: 'From session tracking'
     }
   ];
 
@@ -493,6 +533,91 @@ const TeacherAnalytics = () => {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Real Session History */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-200">
+          <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent">
+            📋 Session History (Real Data)
+          </h2>
+          
+          {sessionData.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p className="text-lg">No sessions recorded yet.</p>
+              <p className="text-sm mt-2">Start a study session to see real data here.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Date & Time</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Duration</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Focus %</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Engagement</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Distractions</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Rating</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sessionData.slice(0, 10).map((session, index) => (
+                    <tr key={session.id || index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <td className="py-4 px-4">
+                        <div className="font-semibold">{session.date}</div>
+                        <div className="text-sm text-gray-500">{session.time}</div>
+                      </td>
+                      <td className="py-4 px-4 font-medium">{session.duration}</td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full rounded-full"
+                              style={{ 
+                                width: `${session.focusPercentage}%`,
+                                backgroundColor: session.focusPercentage >= 70 ? '#4CAF50' : session.focusPercentage >= 50 ? '#FF9800' : '#F44336'
+                              }}
+                            />
+                          </div>
+                          <span className="font-bold" style={{ 
+                            color: session.focusPercentage >= 70 ? '#4CAF50' : session.focusPercentage >= 50 ? '#FF9800' : '#F44336'
+                          }}>
+                            {session.focusPercentage}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="font-bold" style={{ 
+                          color: session.engagementScore >= 70 ? '#4CAF50' : session.engagementScore >= 50 ? '#FF9800' : '#F44336'
+                        }}>
+                          {session.engagementScore}%
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`px-3 py-1 rounded-lg text-sm font-semibold ${
+                          session.distractionCount <= 3 ? 'bg-green-100 text-green-700' : 
+                          session.distractionCount <= 7 ? 'bg-yellow-100 text-yellow-700' : 
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {session.distractionCount}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`px-3 py-1 rounded-lg text-sm font-semibold ${
+                          session.overallRating === 'excellent' ? 'bg-green-500 text-white' :
+                          session.overallRating === 'good' ? 'bg-blue-500 text-white' :
+                          session.overallRating === 'fair' ? 'bg-yellow-500 text-white' :
+                          'bg-red-500 text-white'
+                        }`}>
+                          {session.overallRating === 'needs_improvement' ? 'Needs Work' : 
+                           session.overallRating?.charAt(0).toUpperCase() + session.overallRating?.slice(1)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

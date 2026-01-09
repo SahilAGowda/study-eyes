@@ -207,20 +207,37 @@ export const TemporalMonitoringDashboard: React.FC = () => {
   // Setup keyword detector events
   const setupKeywordDetectorEvents = () => {
     const detector = keywordDetectorRef.current;
-    if (!detector) return;
+    if (!detector) {
+      console.warn('[Dashboard] Cannot setup keyword events - detector not available');
+      return;
+    }
+
+    console.log('[Dashboard] Setting up keyword detector events');
 
     detector.on('keyword_detected', (event) => {
+      console.log('[Dashboard] 🎯 Keyword detected:', event.keyword);
       setLastKeywordDetected(event.keyword || null);
       sessionTrackerRef.current?.recordKeywordDetected(event.keyword || '');
     });
 
-    detector.on('note_taking_started', () => {
+    detector.on('note_taking_started', (event) => {
+      console.log('[Dashboard] 📝 Note-taking mode started');
       setIsNoteTakingMode(true);
     });
 
     detector.on('note_taking_ended', () => {
+      console.log('[Dashboard] 📝 Note-taking mode ended');
       setIsNoteTakingMode(false);
       setNoteTakingRemainingSeconds(0);
+    });
+    
+    detector.on('speech_recognized', (event) => {
+      // Log speech for debugging (can be removed later)
+      console.log('[Dashboard] 🎙️ Speech recognized:', event.transcript);
+    });
+    
+    detector.on('error', (event) => {
+      console.error('[Dashboard] Keyword detector error:', event.transcript);
     });
   };
 
@@ -297,14 +314,31 @@ export const TemporalMonitoringDashboard: React.FC = () => {
   // Toggle keyword detection
   const handleToggleKeywordDetection = () => {
     const detector = keywordDetectorRef.current;
-    if (!detector) return;
+    if (!detector) {
+      console.error('[Dashboard] Keyword detector not available');
+      return;
+    }
 
     if (isKeywordDetectionActive) {
+      console.log('[Dashboard] Stopping keyword detection');
       detector.stopListening();
       setIsKeywordDetectionActive(false);
     } else {
-      detector.startListening();
-      setIsKeywordDetectionActive(true);
+      // Make sure it's initialized
+      if (!KeywordDetector.isSupported()) {
+        console.error('[Dashboard] Web Speech API not supported');
+        setDashboardState(prev => ({ ...prev, error: 'Speech recognition not supported in this browser. Try Chrome.' }));
+        return;
+      }
+      
+      console.log('[Dashboard] Starting keyword detection');
+      const started = detector.startListening();
+      if (started) {
+        setIsKeywordDetectionActive(true);
+      } else {
+        console.error('[Dashboard] Failed to start keyword detection');
+        setDashboardState(prev => ({ ...prev, error: 'Failed to start keyword detection. Check microphone permissions.' }));
+      }
     }
   };
 

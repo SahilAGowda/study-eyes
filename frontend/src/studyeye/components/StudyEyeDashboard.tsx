@@ -34,8 +34,11 @@ import { AudioActivityIndicator } from './AudioActivityIndicator';
 import { VoiceEnrollment } from './VoiceEnrollment';
 import { VoiceVerificationIndicator } from './VoiceVerificationIndicator';
 import { PrivacyControls } from './PrivacyControls';
+import { MultiStudentOverlay } from './MultiStudentOverlay';
 import { errorHandler } from '../services';
 import { processingOrchestrator } from '../services/processingOrchestrator';
+import type { ClassroomState } from '../types/studentState';
+import type { BehaviorAnalysis } from '../services/temporalBehaviorEngine';
 
 /**
  * Dashboard content component (uses context)
@@ -53,6 +56,7 @@ const DashboardContent: React.FC = () => {
   } = useStudyEyeContext();
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isInitializing, setIsInitializing] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
@@ -61,6 +65,21 @@ const DashboardContent: React.FC = () => {
   const [showVoiceEnrollment, setShowVoiceEnrollment] = useState(false);
   const [voiceVerificationEnabled, setVoiceVerificationEnabled] = useState(false);
   const [hasVoiceProfile, setHasVoiceProfile] = useState(false);
+  const [classroomState, setClassroomState] = useState<ClassroomState | null>(null);
+  const [behaviorAnalyses, setBehaviorAnalyses] = useState<Map<string, BehaviorAnalysis> | null>(null);
+
+  // Subscribe to processing state updates for multi-student data
+  useEffect(() => {
+    const unsubscribe = processingOrchestrator.onStateUpdate((processingState) => {
+      if (processingState.classroomState) {
+        setClassroomState(processingState.classroomState);
+      }
+      if (processingState.behaviorAnalyses) {
+        setBehaviorAnalyses(processingState.behaviorAnalyses);
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   // Check browser compatibility on mount
   useEffect(() => {
@@ -165,7 +184,7 @@ const DashboardContent: React.FC = () => {
   const getEngagementTrend = (): 'up' | 'down' | 'flat' => {
     if (state.timelineData.length < 2) return 'flat';
     const recent = state.timelineData.slice(-5);
-    const avg = recent.reduce((sum, d) => sum + d.engagementScore, 0) / recent.length;
+    const avg = recent.reduce((sum, d) => sum + (d.engagementScore || 0), 0) / recent.length;
     const current = state.engagementScore?.score || 0;
     if (current > avg + 5) return 'up';
     if (current < avg - 5) return 'down';
@@ -252,17 +271,46 @@ const DashboardContent: React.FC = () => {
       <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
         {/* Left Column - Video Feed */}
         <Box sx={{ flex: '1 1 65%', minWidth: '300px' }}>
-          <VideoFeedDisplay
-            videoElement={videoRef.current}
-            behaviorResult={state.behaviorResult}
-            faceDetection={state.faceDetection}
-            mode={state.mode}
-            anonymizationEnabled={state.anonymizationEnabled}
-            blurIntensity={state.blurIntensity}
-            isLive={state.isSessionActive}
-            emotionResult={state.emotionResult}
-            gazeData={state.gazeResult}
-          />
+          <Box sx={{ position: 'relative' }}>
+            <VideoFeedDisplay
+              videoElement={videoRef.current}
+              behaviorResult={state.behaviorResult}
+              faceDetection={state.faceDetection}
+              mode={state.mode}
+              anonymizationEnabled={state.anonymizationEnabled}
+              blurIntensity={state.blurIntensity}
+              isLive={state.isSessionActive}
+              emotionResult={state.emotionResult}
+              gazeData={state.gazeResult}
+            />
+            
+            {/* Multi-Student Overlay Canvas */}
+            <canvas
+              ref={canvasRef}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+              }}
+            />
+            
+            {/* Multi-Student Overlay */}
+            {state.isSessionActive && classroomState && (
+              <MultiStudentOverlay
+                videoElement={videoRef.current}
+                classroomState={classroomState}
+                behaviorAnalyses={behaviorAnalyses}
+                canvasRef={canvasRef}
+                showConfidence={true}
+                showAttentionTarget={true}
+                showBehaviorHistory={false}
+                anonymizeStudents={state.anonymizationEnabled}
+              />
+            )}
+          </Box>
 
           {/* Hidden video element */}
           <video
@@ -280,7 +328,7 @@ const DashboardContent: React.FC = () => {
           {/* Timeline */}
           {state.mode === 'classroom' && (
             <Box sx={{ mt: 3 }}>
-              <TemporalTimeline data={state.timelineData} />
+              <TemporalTimeline data={state.timelineData.map(d => ({ ...d, engagementScore: d.engagementScore || 0 }))} />
             </Box>
           )}
         </Box>

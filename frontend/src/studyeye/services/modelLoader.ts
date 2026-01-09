@@ -148,35 +148,51 @@ class ModelLoader {
   }
 
   private async loadBlazeFaceInternal(): Promise<blazeface.BlazeFaceModel> {
-    try {
-      // Ensure TensorFlow.js is initialized
-      await initTensorFlow();
-      
-      this.notifyProgress({
-        model: 'blazeface',
-        progress: 0,
-        status: 'loading',
-      });
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Ensure TensorFlow.js is initialized
+        await initTensorFlow();
+        
+        this.notifyProgress({
+          model: 'blazeface',
+          progress: 0,
+          status: 'loading',
+        });
 
-      const model = await blazeface.load();
+        console.log(`[ModelLoader] Loading BlazeFace model (attempt ${attempt}/${maxRetries})...`);
+        
+        const model = await blazeface.load();
 
-      this.notifyProgress({
-        model: 'blazeface',
-        progress: 100,
-        status: 'loaded',
-      });
+        this.notifyProgress({
+          model: 'blazeface',
+          progress: 100,
+          status: 'loaded',
+        });
 
-      return model;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.notifyProgress({
-        model: 'blazeface',
-        progress: 0,
-        status: 'error',
-        error: errorMessage,
-      });
-      throw new Error(`Failed to load BlazeFace model: ${errorMessage}`);
+        console.log('[ModelLoader] BlazeFace model loaded successfully');
+        return model;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+        console.warn(`[ModelLoader] BlazeFace load attempt ${attempt} failed:`, lastError.message);
+        
+        if (attempt < maxRetries) {
+          // Wait before retrying (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      }
     }
+    
+    const errorMessage = lastError?.message || 'Unknown error';
+    this.notifyProgress({
+      model: 'blazeface',
+      progress: 0,
+      status: 'error',
+      error: errorMessage,
+    });
+    throw new Error(`Failed to load BlazeFace model after ${maxRetries} attempts: ${errorMessage}`);
   }
 
   public async loadFaceMesh(): Promise<faceLandmarksDetection.FaceLandmarksDetector> {
