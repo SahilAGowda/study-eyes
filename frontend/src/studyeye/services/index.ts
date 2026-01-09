@@ -32,6 +32,14 @@ export { EngagementScorer, getEngagementScorer, resetEngagementScorer } from './
 // Temporal Analysis
 export { TemporalAnalyzer, getTemporalAnalyzer, resetTemporalAnalyzer } from './temporalAnalyzer';
 
+// Keyword Detection
+export { KeywordDetector, getKeywordDetector } from './keywordDetector';
+export type { KeywordDetectorConfig, KeywordEvent, KeywordEventType } from './keywordDetector';
+
+// Session Tracking
+export { SessionTracker, getSessionTracker } from './sessionTracker';
+export type { SessionMetrics, SessionEvent, SessionReport } from './sessionTracker';
+
 // Mode Management
 export { ModeManager, getModeManager, resetModeManager } from './modeManager';
 

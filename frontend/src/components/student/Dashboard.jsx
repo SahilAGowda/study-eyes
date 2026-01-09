@@ -138,7 +138,7 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
   ]
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%)',
       p: 0,
@@ -146,7 +146,7 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
     }}>
       {/* Enhanced Welcome Header */}
       <Fade in timeout={800}>
-        <Box sx={{ 
+        <Box sx={{
           mb: 4,
           p: { xs: 3, md: 5 },
           borderRadius: 0,
@@ -185,10 +185,10 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
           <Box sx={{ position: 'relative', zIndex: 1 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 3 }}>
               <Box>
-                <Typography 
-                  variant="h3" 
-                  sx={{ 
-                    fontWeight: 700, 
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontWeight: 700,
                     fontSize: { xs: '2rem', md: '2.75rem' },
                     mb: 1.5,
                     textShadow: '0 2px 8px rgba(0,0,0,0.1)'
@@ -196,10 +196,10 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
                 >
                   Welcome back, {user?.username || 'Student'}! 👋
                 </Typography>
-                <Typography 
-                  variant="h6" 
-                  sx={{ 
-                    opacity: 0.95, 
+                <Typography
+                  variant="h6"
+                  sx={{
+                    opacity: 0.95,
                     fontWeight: 500,
                     letterSpacing: '0.3px',
                     fontSize: { xs: '1rem', md: '1.2rem' }
@@ -248,337 +248,337 @@ const Dashboard = ({ isStudying, setIsStudying }) => {
         <Grid container spacing={3} sx={{ maxWidth: '100%' }}>
           {stats.map((stat, index) => (
             <Grid item xs={12} sm={6} md={4} key={index}>
-            <Grow in timeout={600 + index * 100}>
-              <Card
-                sx={{
-                  background: `linear-gradient(135deg, ${hexToRgba(stat.color, 0.15)}, ${hexToRgba(stat.color, 0.05)})`,
-                  backdropFilter: 'blur(20px)',
-                  border: `1px solid ${hexToRgba(stat.color, 0.3)}`,
-                  borderRadius: '16px',
-                  overflow: 'visible',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  cursor: 'pointer',
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  '&:hover': {
-                    transform: 'translateY(-8px)',
-                    boxShadow: `0 20px 40px ${hexToRgba(stat.color, 0.2)}`,
-                    borderColor: `${hexToRgba(stat.color, 0.5)}`,
-                  }
-                }}
-              >
-                <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                    <Box
-                      sx={{
-                        mr: 2,
-                        color: stat.color,
-                        fontSize: 32,
-                        filter: `drop-shadow(0 0 8px ${stat.color}40)`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      {React.cloneElement(stat.icon, { sx: { fontSize: 32, color: stat.color } })}
+              <Grow in timeout={600 + index * 100}>
+                <Card
+                  sx={{
+                    background: `linear-gradient(135deg, ${hexToRgba(stat.color, 0.15)}, ${hexToRgba(stat.color, 0.05)})`,
+                    backdropFilter: 'blur(20px)',
+                    border: `1px solid ${hexToRgba(stat.color, 0.3)}`,
+                    borderRadius: '16px',
+                    overflow: 'visible',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    cursor: 'pointer',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '&:hover': {
+                      transform: 'translateY(-8px)',
+                      boxShadow: `0 20px 40px ${hexToRgba(stat.color, 0.2)}`,
+                      borderColor: `${hexToRgba(stat.color, 0.5)}`,
+                    }
+                  }}
+                >
+                  <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                      <Box
+                        sx={{
+                          mr: 2,
+                          color: stat.color,
+                          fontSize: 32,
+                          filter: `drop-shadow(0 0 8px ${stat.color}40)`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        {React.cloneElement(stat.icon, { sx: { fontSize: 32, color: stat.color } })}
+                      </Box>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: 600,
+                          background: stat.gradient,
+                          backgroundClip: 'text',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                        }}
+                      >
+                        {stat.title}
+                      </Typography>
                     </Box>
-                    <Typography 
-                      variant="h6"
+                    <Typography
+                      variant="h4"
                       sx={{
-                        fontWeight: 600,
-                        background: stat.gradient,
-                        backgroundClip: 'text',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
+                        fontWeight: 700,
+                        color: stat.color,
+                        textShadow: `0 0 20px ${stat.color}30`,
+                        mb: 1,
                       }}
                     >
-                      {stat.title}
+                      {stat.value}
                     </Typography>
-                  </Box>
-                  <Typography 
-                    variant="h4" 
-                    sx={{ 
-                      fontWeight: 700, 
-                      color: stat.color,
-                      textShadow: `0 0 20px ${stat.color}30`,
-                      mb: 1,
-                    }}
-                  >
-                    {stat.value}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                    {stat.subtitle}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grow>
-          </Grid>
-        ))}
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                      {stat.subtitle}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grow>
+            </Grid>
+          ))}
         </Grid>
       </Box>
 
       {/* Main Content Grid - Recent Sessions and Goals */}
       <Box sx={{ px: { xs: 2, md: 4 } }}>
         <Grid container spacing={4} sx={{ maxWidth: '100%' }}>
-        {/* Recent Sessions Column */}
-        <Grid item xs={12} md={6}>
+          {/* Recent Sessions Column */}
+          <Grid item xs={12} md={6}>
 
-          {/* Enhanced Recent Sessions */}
-          <Fade in timeout={1200}>
-            <Paper sx={{ 
-              p: 4, 
-              borderRadius: '20px', 
-              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.05))',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(139, 92, 246, 0.3)',
-              boxShadow: 'none'
-            }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                <Typography 
-                  variant="h6" 
-                  sx={{
-                    fontWeight: 600,
-                    background: 'linear-gradient(45deg, #8B5CF6, #7C3AED)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
-                  📅 Recent Sessions
-                </Typography>
-                <Button
-                  endIcon={<ArrowIcon />}
-                  sx={{ 
-                    textTransform: 'none', 
-                    fontWeight: 600,
-                    color: '#8B5CF6',
-                    fontSize: '0.875rem',
-                    '&:hover': {
-                      bgcolor: 'rgba(139, 92, 246, 0.08)'
-                    }
-                  }}
-                  onClick={() => navigate('/student/reports')}
-                >
-                  View All
-                </Button>
-              </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {recentSessions.map((session, index) => (
-                <Card 
-                  key={index}
-                  sx={{ 
-                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '16px',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateX(8px)',
-                      boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
-                      borderColor: 'rgba(139, 92, 246, 0.4)',
-                    },
-                  }}
-                >
-                  <CardContent sx={{ py: 3 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography 
-                        variant="h6" 
-                        sx={{ 
-                          minWidth: 100,
-                          fontWeight: 700,
-                          background: 'linear-gradient(45deg, #8B5CF6, #7C3AED)',
-                          backgroundClip: 'text',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                        }}
-                      >
-                        {session.date}
-                      </Typography>
-                      <Box sx={{ flex: 1, mx: 4 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>Duration</Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#8B5CF6' }}>
-                            {session.duration}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 1.5 }}>
-                        <Chip 
-                          label={`${session.focus}%`} 
-                          size="small" 
-                          sx={{ 
-                            background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
-                            color: 'white',
-                            fontWeight: 600,
-                            boxShadow: '0 2px 8px rgba(76, 175, 80, 0.4)',
-                          }}
-                        />
-                        <Chip 
-                          label={`${session.attention}%`} 
-                          size="small" 
-                          sx={{
-                            background: 'rgba(33, 150, 243, 0.2)',
-                            color: '#2196f3',
-                            border: '1px solid rgba(33, 150, 243, 0.3)',
-                            fontWeight: 600,
-                          }}
-                        />
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-              ))}
-            </Box>
-            </Paper>
-          </Fade>
-        </Grid>
-
-        {/* Goals Column - REDESIGNED for consistency */}
-        <Grid item xs={12} md={6}>
-          {/* Enhanced Goals Progress - Matches Recent Sessions styling */}
-          <Fade in timeout={1000}>
-            <Paper sx={{ 
-              p: 4, 
-              borderRadius: '20px', 
-              background: 'linear-gradient(135deg, rgba(247, 115, 22, 0.15), rgba(234, 88, 12, 0.05))',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(247, 115, 22, 0.3)',
-              boxShadow: 'none',
-              height: '100%', // Match height with Recent Sessions
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
-              {/* Header - Consistent with Recent Sessions */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                <Typography 
-                  variant="h6" 
-                  sx={{
-                    fontWeight: 600,
-                    background: 'linear-gradient(45deg, #F97316, #EA580C)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
-                  🎯 Your Goals
-                </Typography>
-                <Button
-                  endIcon={<ArrowIcon />}
-                  sx={{ 
-                    textTransform: 'none', 
-                    fontWeight: 600,
-                    color: '#F97316',
-                    fontSize: '0.875rem',
-                    '&:hover': {
-                      bgcolor: 'rgba(247, 115, 22, 0.08)'
-                    }
-                  }}
-                  onClick={() => navigate('/student/reports')}
-                >
-                  View All
-                </Button>
-              </Box>
-
-              {/* Goals Cards - Consistent spacing and styling */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-                {goals.map((goal, index) => {
-                  const progress = (goal.current / goal.target) * 100
-                  const gradients = [
-                    'linear-gradient(45deg, #F97316, #EA580C)',
-                    'linear-gradient(45deg, #8B5CF6, #7C3AED)',
-                    'linear-gradient(45deg, #4caf50, #66bb6a)'
-                  ]
-                  const colors = ['#F97316', '#8B5CF6', '#4caf50']
-                  
-                  return (
-                    <Card 
+            {/* Enhanced Recent Sessions */}
+            <Fade in timeout={1200}>
+              <Paper sx={{
+                p: 4,
+                borderRadius: '20px',
+                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.05))',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(139, 92, 246, 0.3)',
+                boxShadow: 'none'
+              }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
+                      background: 'linear-gradient(45deg, #8B5CF6, #7C3AED)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}
+                  >
+                    📅 Recent Sessions
+                  </Typography>
+                  <Button
+                    endIcon={<ArrowIcon />}
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      color: '#8B5CF6',
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        bgcolor: 'rgba(139, 92, 246, 0.08)'
+                      }
+                    }}
+                    onClick={() => navigate('/student/reports')}
+                  >
+                    View All
+                  </Button>
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {recentSessions.map((session, index) => (
+                    <Card
                       key={index}
-                      sx={{ 
+                      sx={{
                         background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
                         backdropFilter: 'blur(10px)',
                         border: '1px solid rgba(255, 255, 255, 0.2)',
                         borderRadius: '16px',
                         transition: 'all 0.3s ease',
-                        flex: 1, // Equal height distribution
-                        display: 'flex',
-                        flexDirection: 'column',
                         '&:hover': {
-                          transform: 'translateX(8px)', // Match Recent Sessions hover
-                          boxShadow: `0 8px 25px ${hexToRgba(colors[index], 0.25)}`,
-                          borderColor: `${hexToRgba(colors[index], 0.4)}`,
+                          transform: 'translateX(8px)',
+                          boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
+                          borderColor: 'rgba(139, 92, 246, 0.4)',
                         },
                       }}
                     >
-                      <CardContent sx={{ py: 3, px: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        {/* Title and Value Row - Consistent alignment */}
-                        <Box sx={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between', 
-                          alignItems: 'center', 
-                          mb: 2 
-                        }}>
-                          <Typography 
-                            variant="subtitle1" 
-                            sx={{ 
-                              fontWeight: 700, 
-                              fontSize: '1rem',
-                              color: 'text.primary'
-                            }}
-                          >
-                            {goal.title}
-                          </Typography>
-                          <Typography 
-                            variant="body1" 
-                            sx={{ 
-                              fontWeight: 700, 
-                              color: colors[index], 
-                              fontSize: '0.95rem',
-                              whiteSpace: 'nowrap',
-                              ml: 2
-                            }}
-                          >
-                            {goal.current}/{goal.target} {goal.unit}
-                          </Typography>
-                        </Box>
-
-                        {/* Progress Bar - Consistent height and styling */}
-                        <Box sx={{ mb: 1.5 }}>
-                          <LinearProgress
-                            variant="determinate"
-                            value={progress}
+                      <CardContent sx={{ py: 3 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography
+                            variant="h6"
                             sx={{
-                              height: 10, // Consistent height
-                              borderRadius: 5,
-                              backgroundColor: 'rgba(0, 0, 0, 0.08)',
-                              '& .MuiLinearProgress-bar': {
-                                background: gradients[index],
-                                borderRadius: 5,
-                                boxShadow: `0 0 12px ${hexToRgba(colors[index], 0.4)}`,
-                              }
+                              minWidth: 100,
+                              fontWeight: 700,
+                              background: 'linear-gradient(45deg, #8B5CF6, #7C3AED)',
+                              backgroundClip: 'text',
+                              WebkitBackgroundClip: 'text',
+                              WebkitTextFillColor: 'transparent',
                             }}
-                          />
+                          >
+                            {session.date}
+                          </Typography>
+                          <Box sx={{ flex: 1, mx: 4 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>Duration</Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 700, color: '#8B5CF6' }}>
+                                {session.duration}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <Box sx={{ display: 'flex', gap: 1.5 }}>
+                            <Chip
+                              label={`${session.focus}%`}
+                              size="small"
+                              sx={{
+                                background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
+                                color: 'white',
+                                fontWeight: 600,
+                                boxShadow: '0 2px 8px rgba(76, 175, 80, 0.4)',
+                              }}
+                            />
+                            <Chip
+                              label={`${session.attention}%`}
+                              size="small"
+                              sx={{
+                                background: 'rgba(33, 150, 243, 0.2)',
+                                color: '#2196f3',
+                                border: '1px solid rgba(33, 150, 243, 0.3)',
+                                fontWeight: 600,
+                              }}
+                            />
+                          </Box>
                         </Box>
-
-                        {/* Progress Percentage - Consistent typography */}
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            fontWeight: 600, 
-                            fontSize: '0.875rem',
-                            color: 'text.secondary'
-                          }}
-                        >
-                          {progress.toFixed(0)}% Complete
-                        </Typography>
                       </CardContent>
                     </Card>
-                  )
-                })}
-              </Box>
-            </Paper>
-          </Fade>
-        </Grid>
+                  ))}
+                </Box>
+              </Paper>
+            </Fade>
+          </Grid>
+
+          {/* Goals Column - REDESIGNED for consistency */}
+          <Grid item xs={12} md={6}>
+            {/* Enhanced Goals Progress - Matches Recent Sessions styling */}
+            <Fade in timeout={1000}>
+              <Paper sx={{
+                p: 4,
+                borderRadius: '20px',
+                background: 'linear-gradient(135deg, rgba(247, 115, 22, 0.15), rgba(234, 88, 12, 0.05))',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(247, 115, 22, 0.3)',
+                boxShadow: 'none',
+                height: '100%', // Match height with Recent Sessions
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                {/* Header - Consistent with Recent Sessions */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
+                      background: 'linear-gradient(45deg, #F97316, #EA580C)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}
+                  >
+                    🎯 Your Goals
+                  </Typography>
+                  <Button
+                    endIcon={<ArrowIcon />}
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      color: '#F97316',
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        bgcolor: 'rgba(247, 115, 22, 0.08)'
+                      }
+                    }}
+                    onClick={() => navigate('/student/reports')}
+                  >
+                    View All
+                  </Button>
+                </Box>
+
+                {/* Goals Cards - Consistent spacing and styling */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+                  {goals.map((goal, index) => {
+                    const progress = (goal.current / goal.target) * 100
+                    const gradients = [
+                      'linear-gradient(45deg, #F97316, #EA580C)',
+                      'linear-gradient(45deg, #8B5CF6, #7C3AED)',
+                      'linear-gradient(45deg, #4caf50, #66bb6a)'
+                    ]
+                    const colors = ['#F97316', '#8B5CF6', '#4caf50']
+
+                    return (
+                      <Card
+                        key={index}
+                        sx={{
+                          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '16px',
+                          transition: 'all 0.3s ease',
+                          flex: 1, // Equal height distribution
+                          display: 'flex',
+                          flexDirection: 'column',
+                          '&:hover': {
+                            transform: 'translateX(8px)', // Match Recent Sessions hover
+                            boxShadow: `0 8px 25px ${hexToRgba(colors[index], 0.25)}`,
+                            borderColor: `${hexToRgba(colors[index], 0.4)}`,
+                          },
+                        }}
+                      >
+                        <CardContent sx={{ py: 3, px: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                          {/* Title and Value Row - Consistent alignment */}
+                          <Box sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            mb: 2
+                          }}>
+                            <Typography
+                              variant="subtitle1"
+                              sx={{
+                                fontWeight: 700,
+                                fontSize: '1rem',
+                                color: 'text.primary'
+                              }}
+                            >
+                              {goal.title}
+                            </Typography>
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                fontWeight: 700,
+                                color: colors[index],
+                                fontSize: '0.95rem',
+                                whiteSpace: 'nowrap',
+                                ml: 2
+                              }}
+                            >
+                              {goal.current}/{goal.target} {goal.unit}
+                            </Typography>
+                          </Box>
+
+                          {/* Progress Bar - Consistent height and styling */}
+                          <Box sx={{ mb: 1.5 }}>
+                            <LinearProgress
+                              variant="determinate"
+                              value={progress}
+                              sx={{
+                                height: 10, // Consistent height
+                                borderRadius: 5,
+                                backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                                '& .MuiLinearProgress-bar': {
+                                  background: gradients[index],
+                                  borderRadius: 5,
+                                  boxShadow: `0 0 12px ${hexToRgba(colors[index], 0.4)}`,
+                                }
+                              }}
+                            />
+                          </Box>
+
+                          {/* Progress Percentage - Consistent typography */}
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600,
+                              fontSize: '0.875rem',
+                              color: 'text.secondary'
+                            }}
+                          >
+                            {progress.toFixed(0)}% Complete
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </Box>
+              </Paper>
+            </Fade>
+          </Grid>
         </Grid>
       </Box>
 

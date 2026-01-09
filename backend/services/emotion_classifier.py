@@ -323,13 +323,18 @@ class EmotionClassifier:
         self.face_cascade = None
         self.dnn_net = None
         self.use_dnn_detector = False
-        self.input_shape = (48, 48, 1)  # FER2013 image size
+        self.input_shape = (48, 48, 1)  # Default, will be updated from model
         
         # Load face detector
         self._load_face_detector()
         
         # Load model (prefer PyTorch for better GPU support)
         self._load_model()
+        
+        # Update input shape from loaded model
+        if self.model is not None and self.model_type == 'tensorflow':
+            self.input_shape = tuple(self.model.input_shape[1:])
+            print(f"Model input shape: {self.input_shape}")
         
         # History for temporal smoothing
         self.emotion_history = []
@@ -421,21 +426,22 @@ class EmotionClassifier:
         else:
             gray = face_image
             
-        # Resize to 48x48
-        resized = cv2.resize(gray, (48, 48), interpolation=cv2.INTER_AREA)
+        # Resize to model's expected size
+        img_size = self.input_shape[0]  # Height
+        resized = cv2.resize(gray, (img_size, img_size), interpolation=cv2.INTER_AREA)
         
         # Normalize based on model type
         if self.model_type == 'tensorflow':
-            # TensorFlow/Keras: rescale to [0, 1] (as in the notebook)
+            # TensorFlow/Keras: rescale to [0, 1]
             normalized = resized.astype('float32') / 255.0
             # TensorFlow: (batch, height, width, channels)
-            return normalized.reshape(1, 48, 48, 1)
+            return normalized.reshape(1, img_size, img_size, 1)
         else:
             # PyTorch: normalize to [-1, 1]
             normalized = resized.astype('float32') / 255.0
             normalized = (normalized - 0.5) / 0.5
             # PyTorch: (batch, channels, height, width)
-            preprocessed = normalized.reshape(1, 1, 48, 48)
+            preprocessed = normalized.reshape(1, 1, img_size, img_size)
             return torch.from_numpy(preprocessed).to(self.device)
     
     def detect_faces(self, image):

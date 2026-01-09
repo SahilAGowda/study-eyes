@@ -12,7 +12,8 @@ import {
   Quiz as QuizIcon,
   TrendingUp as EngagementIcon,
   Business as DepartmentIcon,
-  AdminPanelSettings as SystemIcon
+  AdminPanelSettings as SystemIcon,
+  RecordVoiceOver as VoiceIcon
 } from '@mui/icons-material'
 
 // Student Components
@@ -27,6 +28,7 @@ import Reports from './components/student/Reports'
 
 // StudyEye Components
 import { StudyEyeDashboard } from './studyeye/components'
+import { TemporalMonitoringDashboard } from './studyeye/components'
 
 // Teacher Components
 import TeacherDashboard from './components/teacher/Dashboard'
@@ -70,6 +72,7 @@ export const roleRoutes = {
     { path: 'dashboard', element: TeacherDashboard, requiresAuth: true },
     { path: 'live-class', element: LiveClass, requiresAuth: true },
     { path: 'live-session', element: LiveSession, requiresAuth: true },
+    { path: 'temporal-monitoring', element: TemporalMonitoringDashboard, requiresAuth: true },
     { path: 'quizzes-exams', element: QuizzesExams, requiresAuth: true },
     { path: 'reports-analytics', element: ReportsAnalytics, requiresAuth: true },
     { path: 'settings', element: TeacherSettings, requiresAuth: true },
@@ -145,6 +148,7 @@ export const roleMenuItems = {
   teacher: [
     { path: '/teacher/dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
     { path: '/teacher/live-class', label: 'Live Class', icon: <LiveClassIcon /> },
+    { path: '/teacher/temporal-monitoring', label: 'Smart Monitoring', icon: <VoiceIcon /> },
     { path: '/teacher/students', label: 'Students', icon: <PeopleIcon /> },
     { path: '/teacher/quizzes-exams', label: 'Quizzes & Exams', icon: <QuizIcon /> },
     { path: '/teacher/reports-analytics', label: 'Reports & Analytics', icon: <ReportsIcon /> },

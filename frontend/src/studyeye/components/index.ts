@@ -27,3 +27,7 @@ export type { default as AudioActivityIndicatorProps } from './AudioActivityIndi
 
 export { StudyEyeDashboard } from './StudyEyeDashboard';
 export type { default as StudyEyeDashboardProps } from './StudyEyeDashboard';
+
+export { default as TeacherVoicePanel } from './TeacherVoicePanel';
+export { default as SessionAnalyticsPanel } from './SessionAnalyticsPanel';
+export { default as TemporalMonitoringDashboard } from './TemporalMonitoringDashboard';

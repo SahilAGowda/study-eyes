@@ -223,40 +223,40 @@ const Reports = () => {
 
   // Mock data - Milestones
   const milestones = [
-    { 
-      id: 1, 
-      title: '7-day engagement streak', 
-      date: 'Oct 15-21', 
-      icon: <FireIcon />, 
-      color: '#FF5722' 
+    {
+      id: 1,
+      title: '7-day engagement streak',
+      date: 'Oct 15-21',
+      icon: <FireIcon />,
+      color: '#FF5722'
     },
-    { 
-      id: 2, 
-      title: 'Perfect attendance this month', 
-      date: '18/18 classes', 
-      icon: <CheckIcon />, 
-      color: '#4CAF50' 
+    {
+      id: 2,
+      title: 'Perfect attendance this month',
+      date: '18/18 classes',
+      icon: <CheckIcon />,
+      color: '#4CAF50'
     },
-    { 
-      id: 3, 
-      title: '90%+ on 3 quizzes', 
-      date: 'Math quizzes', 
-      icon: <StarIcon />, 
-      color: '#FFD700' 
+    {
+      id: 3,
+      title: '90%+ on 3 quizzes',
+      date: 'Math quizzes',
+      icon: <StarIcon />,
+      color: '#FFD700'
     },
-    { 
-      id: 4, 
-      title: 'Most improved in Physics', 
-      date: '12% increase', 
-      icon: <TrendingUpIcon />, 
-      color: '#2196F3' 
+    {
+      id: 4,
+      title: 'Most improved in Physics',
+      date: '12% increase',
+      icon: <TrendingUpIcon />,
+      color: '#2196F3'
     },
-    { 
-      id: 5, 
-      title: 'Active participant', 
-      date: 'Asked 15 questions', 
-      icon: <TrophyIcon />, 
-      color: '#9C27B0' 
+    {
+      id: 5,
+      title: 'Active participant',
+      date: 'Asked 15 questions',
+      icon: <TrophyIcon />,
+      color: '#9C27B0'
     }
   ]
 
@@ -522,13 +522,13 @@ const Reports = () => {
   }
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       minHeight: '100vh',
       background: '#F5F5F5',
       pb: 6
     }}>
       {/* Header */}
-      <Box sx={{ 
+      <Box sx={{
         bgcolor: '#2196F3',
         color: 'white',
         p: 4,
@@ -563,7 +563,7 @@ const Reports = () => {
                   <Select
                     value={selectedPeriod}
                     onChange={handlePeriodChange}
-                    sx={{ 
+                    sx={{
                       bgcolor: 'white',
                       '& .MuiOutlinedInput-notchedOutline': {
                         borderColor: '#2196F3'
@@ -597,8 +597,8 @@ const Reports = () => {
                     {/* Engagement Score */}
                     <Grid item xs={12} sm={6} md={3}>
                       <Box sx={{ textAlign: 'center' }}>
-                        <CircularProgress 
-                          value={overallSummary.engagement.value} 
+                        <CircularProgress
+                          value={overallSummary.engagement.value}
                           color={getEngagementColor(overallSummary.engagement.value)}
                         />
                         <Typography variant="h6" sx={{ mt: 2, fontWeight: 600 }}>
@@ -608,9 +608,9 @@ const Reports = () => {
                           icon={<TrendingUpIcon />}
                           label={`+${overallSummary.engagement.change}% from last period`}
                           size="small"
-                          sx={{ 
-                            mt: 1, 
-                            bgcolor: '#E8F5E9', 
+                          sx={{
+                            mt: 1,
+                            bgcolor: '#E8F5E9',
                             color: '#4CAF50',
                             fontWeight: 600
                           }}
@@ -621,9 +621,9 @@ const Reports = () => {
                     {/* Study Hours */}
                     <Grid item xs={12} sm={6} md={3}>
                       <Box sx={{ textAlign: 'center' }}>
-                        <Box sx={{ 
-                          width: 120, 
-                          height: 120, 
+                        <Box sx={{
+                          width: 120,
+                          height: 120,
                           borderRadius: '50%',
                           bgcolor: '#FFF3E0',
                           display: 'flex',
@@ -646,9 +646,9 @@ const Reports = () => {
                     {/* Classes Attended */}
                     <Grid item xs={12} sm={6} md={3}>
                       <Box sx={{ textAlign: 'center' }}>
-                        <Box sx={{ 
-                          width: 120, 
-                          height: 120, 
+                        <Box sx={{
+                          width: 120,
+                          height: 120,
                           borderRadius: '50%',
                           bgcolor: '#E8F5E9',
                           display: 'flex',
@@ -674,9 +674,9 @@ const Reports = () => {
                     {/* Quizzes */}
                     <Grid item xs={12} sm={6} md={3}>
                       <Box sx={{ textAlign: 'center' }}>
-                        <Box sx={{ 
-                          width: 120, 
-                          height: 120, 
+                        <Box sx={{
+                          width: 120,
+                          height: 120,
                           borderRadius: '50%',
                           bgcolor: '#F3E5F5',
                           display: 'flex',
@@ -711,7 +711,7 @@ const Reports = () => {
               {subjects.map((subject, index) => (
                 <Grid item xs={12} md={6} key={subject.id}>
                   <Grow in timeout={800 + index * 100}>
-                    <Card sx={{ 
+                    <Card sx={{
                       boxShadow: 3,
                       transition: 'all 0.3s ease',
                       '&:hover': {
@@ -768,10 +768,10 @@ const Reports = () => {
                         <Box sx={{ height: 60, mt: 2 }}>
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={subject.trend.map((val, idx) => ({ value: val, index: idx }))}>
-                              <Line 
-                                type="monotone" 
-                                dataKey="value" 
-                                stroke={subject.color} 
+                              <Line
+                                type="monotone"
+                                dataKey="value"
+                                stroke={subject.color}
                                 strokeWidth={2}
                                 dot={false}
                               />
@@ -791,7 +791,7 @@ const Reports = () => {
                         <Collapse in={expandedSubjects[subject.id]}>
                           <Box sx={{ mt: 2, p: 2, bgcolor: '#F5F5F5', borderRadius: 2 }}>
                             <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                              You're doing great in {subject.name}! 
+                              You're doing great in {subject.name}!
                               {subject.status === 'Excellent' && ' Keep up the amazing work!'}
                               {subject.status === 'Good' && ' A little more effort and you\'ll be excellent!'}
                               {subject.status === 'Needs Focus' && ' Let\'s work together to improve this!'}
@@ -840,61 +840,61 @@ const Reports = () => {
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart data={engagementTrends}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
-                            <XAxis 
-                              dataKey="date" 
+                            <XAxis
+                              dataKey="date"
                               stroke="#757575"
                               style={{ fontSize: '0.875rem' }}
                             />
-                            <YAxis 
+                            <YAxis
                               stroke="#757575"
                               style={{ fontSize: '0.875rem' }}
                               domain={[0, 100]}
                             />
-                            <RechartsTooltip 
-                              contentStyle={{ 
+                            <RechartsTooltip
+                              contentStyle={{
                                 borderRadius: 8,
                                 border: 'none',
                                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                               }}
                             />
-                            <Legend 
+                            <Legend
                               wrapperStyle={{ fontSize: '0.875rem', fontWeight: 600 }}
                             />
                             {visibleSubjects.mathematics && (
-                              <Line 
-                                type="monotone" 
-                                dataKey="mathematics" 
-                                stroke="#2196F3" 
+                              <Line
+                                type="monotone"
+                                dataKey="mathematics"
+                                stroke="#2196F3"
                                 strokeWidth={3}
                                 dot={{ r: 5 }}
                                 name="Mathematics"
                               />
                             )}
                             {visibleSubjects.physics && (
-                              <Line 
-                                type="monotone" 
-                                dataKey="physics" 
-                                stroke="#9C27B0" 
+                              <Line
+                                type="monotone"
+                                dataKey="physics"
+                                stroke="#9C27B0"
                                 strokeWidth={3}
                                 dot={{ r: 5 }}
                                 name="Physics"
                               />
                             )}
                             {visibleSubjects.chemistry && (
-                              <Line 
-                                type="monotone" 
-                                dataKey="chemistry" 
-                                stroke="#4CAF50" 
+                              <Line
+                                type="monotone"
+                                dataKey="chemistry"
+                                stroke="#4CAF50"
                                 strokeWidth={3}
                                 dot={{ r: 5 }}
                                 name="Chemistry"
                               />
                             )}
                             {visibleSubjects.english && (
-                              <Line 
-                                type="monotone" 
-                                dataKey="english" 
-                                stroke="#FF9800" 
+                              <Line
+                                type="monotone"
+                                dataKey="english"
+                                stroke="#FF9800"
                                 strokeWidth={3}
                                 dot={{ r: 5 }}
                                 name="English"
@@ -919,8 +919,8 @@ const Reports = () => {
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {milestones.map((milestone, index) => (
                           <Grow in timeout={1500 + index * 100} key={milestone.id}>
-                            <Card 
-                              sx={{ 
+                            <Card
+                              sx={{
                                 bgcolor: '#F5F5F5',
                                 boxShadow: 'none',
                                 border: `2px solid ${milestone.color}`,
@@ -933,7 +933,7 @@ const Reports = () => {
                             >
                               <CardContent sx={{ p: 2 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                  <Box sx={{ 
+                                  <Box sx={{
                                     bgcolor: milestone.color,
                                     borderRadius: '50%',
                                     width: 40,
@@ -974,7 +974,7 @@ const Reports = () => {
               {behaviors.map((behavior, index) => (
                 <Grid item xs={12} md={6} lg={4} key={behavior.id}>
                   <Grow in timeout={1600 + index * 100}>
-                    <Card sx={{ 
+                    <Card sx={{
                       boxShadow: 3,
                       height: '100%',
                       transition: 'all 0.3s ease',
@@ -985,7 +985,7 @@ const Reports = () => {
                     }}>
                       <CardContent>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                          <Box sx={{ 
+                          <Box sx={{
                             bgcolor: `${behavior.color}20`,
                             borderRadius: 2,
                             p: 1,
@@ -1078,7 +1078,7 @@ const Reports = () => {
               {improvements.map((improvement, index) => (
                 <Grid item xs={12} md={4} key={improvement.id}>
                   <Grow in timeout={2000 + index * 100}>
-                    <Card sx={{ 
+                    <Card sx={{
                       boxShadow: 3,
                       bgcolor: '#FFF9F5',
                       borderLeft: `4px solid ${improvement.color}`,
@@ -1102,9 +1102,9 @@ const Reports = () => {
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                           {improvement.description}
                         </Typography>
-                        <Box sx={{ 
-                          p: 2, 
-                          bgcolor: 'white', 
+                        <Box sx={{
+                          p: 2,
+                          bgcolor: 'white',
                           borderRadius: 2,
                           border: `1px solid ${improvement.color}`
                         }}>
@@ -1142,9 +1142,9 @@ const Reports = () => {
                       {recentClasses.map((classItem, index) => {
                         const subjectData = subjects.find(s => s.name === classItem.subject)
                         return (
-                          <TableRow 
+                          <TableRow
                             key={index}
-                            sx={{ 
+                            sx={{
                               '&:hover': { bgcolor: '#F5F5F5' },
                               transition: 'background-color 0.2s ease'
                             }}
@@ -1184,7 +1184,7 @@ const Reports = () => {
                               <Box sx={{ display: 'flex', gap: 0.5 }}>
                                 {classItem.behaviors.map((behavior, idx) => (
                                   <Tooltip key={idx} title={behavior}>
-                                    <Box sx={{ 
+                                    <Box sx={{
                                       bgcolor: '#E0E0E0',
                                       borderRadius: 1,
                                       p: 0.5,
@@ -1308,8 +1308,8 @@ const Reports = () => {
           <Button onClick={() => setShareDialogOpen(false)} sx={{ textTransform: 'none' }}>
             Cancel
           </Button>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             onClick={() => {
               console.log('Sharing report with parent...')
               setShareDialogOpen(false)
